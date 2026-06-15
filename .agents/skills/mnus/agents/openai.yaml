@@ -1,0 +1,6 @@
+interface:
+  display_name: "Mnus"
+  short_description: "Repo-specific patterns and workflows for mnus"
+  default_prompt: "Use the mnus repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
