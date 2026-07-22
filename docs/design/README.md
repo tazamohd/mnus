@@ -1,4 +1,4 @@
-# SALIS AUTO — Design Blueprint
+# SALIS AUTO — Design Documentation
 
 Canonical UI/UX and systems reference for the SALIS AUTO automotive ERP platform.
 Covers **every role, portal, route and module**, plus the full set of architecture and
@@ -8,14 +8,17 @@ flow diagrams and per-portal wireframes.
 
 | File | Description |
 |------|-------------|
-| [`salis-auto-design-blueprint.html`](./salis-auto-design-blueprint.html) | The complete blueprint — best viewed as a rendered Artifact (Mermaid diagrams render natively). |
+| [`salis-auto-design-blueprint.html`](./salis-auto-design-blueprint.html) | The complete blueprint — architecture diagrams, ERDs, data flows, state machines, RBAC matrix, route inventories and signature wireframes for every portal. |
+| [`salis-auto-wireframe-gallery.html`](./salis-auto-wireframe-gallery.html) | Wireframe gallery (Part 2) — 38+ mid-fidelity screen wireframes across all 10 portals, plus universal loading/empty/error/offline reference states. |
 
-> The HTML is authored as an **Artifact-native document**: Mermaid diagrams use
-> `<pre class="mermaid">` blocks and render on claude.ai/artifacts (and the Claude
-> app's artifact viewer) without any external scripts. Opening the raw file in a plain
-> browser will show diagram source unless a Mermaid runtime is present.
+> Both files are authored as **Artifact-native documents**: Mermaid diagrams use
+> `<pre class="mermaid">` blocks and CSS wireframes render inline. Best viewed as
+> rendered Artifacts on claude.ai; opening the raw files in a plain browser will
+> show Mermaid source unless a Mermaid runtime is present.
 
-## Contents of the blueprint
+## Contents
+
+### Part 1 — Design Blueprint
 
 **Foundation** — Overview · Design system (brand palette, typography, 7 layout
 archetypes, component inventory) · Information architecture (portal map + 18 workflow
@@ -44,6 +47,23 @@ lifecycles).
 (login/RBAC routing, end-to-end service→ZATCA→payment, automated reorder, real-time bay
 occupancy, support escalation) · Edge & error states · Role × scenario coverage matrix.
 
+### Part 2 — Wireframe Gallery
+
+38+ screens organized by portal:
+
+- **Auth** — Register, 2FA setup
+- **Platform Admin** — Garage management, RBAC editor, system health, billing
+- **Admin / Manager** — Appointments, workshop calendar, inventory, analytics dashboard
+- **Service Advisor** — Dashboard, estimates, vehicle check-in, communications
+- **Technician** — Job queue (mobile), inspection checklist, OBD diagnostics, AR overlay
+- **Store Keeper** — Stock grid, receive goods, reorder alerts, returns processing
+- **Purchase Agent** — PO builder, RFQ comparison
+- **Finance** — Dashboard, payroll run, P&L report, VAT/ZATCA filing
+- **Customer Support** — Ticket view, SLA board, knowledge base, call log
+- **HR** — Employee directory, attendance calendar
+- **Customer** — Booking wizard, find-a-garage map, parts store, invoice history
+- **Reference states** — Loading skeleton, empty state, error boundary, offline (PWA)
+
 ## Design system reference
 
 - **Deep Navy** `#0B1F3B` — headers, rails, primary ground
@@ -55,5 +75,5 @@ occupancy, support escalation) · Edge & error states · Role × scenario covera
 
 ## Diagram & wireframe index
 
-27 diagrams (Fig 1–24 + 3 lifecycle sets) and 9 wireframes (WF 1–9). See the blueprint's
-left-hand index for direct navigation.
+27 diagrams (Fig 1–24 + 3 lifecycle sets) and 9 blueprint wireframes (WF 1–9) in Part 1.
+38+ screen wireframes in Part 2. See each file's left-hand nav for direct navigation.
