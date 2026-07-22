@@ -1,0 +1,1562 @@
+<title>SALIS AUTO — Design Blueprint</title>
+<style>
+  :root{
+    --navy:#0B1F3B; --navy-2:#0e2748; --blue:#0A5ED7; --cyan:#0BB3FF; --orange:#F97316;
+    --ink:#0c1626; --ink-soft:#41506a; --line:#d9e1ee; --bg:#f5f8fd; --card:#ffffff;
+    --muted:#6b7a93; --good:#12a150; --warn:#F97316; --crit:#e5484d;
+    --rail:#0B1F3B; --rail-ink:#cdd9ef; --rail-active:#0BB3FF;
+    --grad:linear-gradient(100deg,var(--blue),var(--cyan));
+    --wire:#eef3fb; --wire-line:#c7d4e8; --wire-block:#dbe6f6; --wire-ink:#9fb0cc;
+    --shadow:0 1px 2px rgba(11,31,59,.06),0 8px 24px rgba(11,31,59,.06);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --display:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ink:#e7eefb; --ink-soft:#a9b7d0; --line:#1e2f4d; --bg:#081426; --card:#0d1e38;
+      --muted:#8294b3; --wire:#0c1d36; --wire-line:#23375a; --wire-block:#152a4b; --wire-ink:#5a6f95;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{
+    --ink:#0c1626; --ink-soft:#41506a; --line:#d9e1ee; --bg:#f5f8fd; --card:#ffffff;
+    --muted:#6b7a93; --wire:#eef3fb; --wire-line:#c7d4e8; --wire-block:#dbe6f6; --wire-ink:#9fb0cc;
+    --shadow:0 1px 2px rgba(11,31,59,.06),0 8px 24px rgba(11,31,59,.06);
+  }
+  :root[data-theme="dark"]{
+    --ink:#e7eefb; --ink-soft:#a9b7d0; --line:#1e2f4d; --bg:#081426; --card:#0d1e38;
+    --muted:#8294b3; --wire:#0c1d36; --wire-line:#23375a; --wire-block:#152a4b; --wire-ink:#5a6f95;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.6;
+    font-size:15.5px;-webkit-font-smoothing:antialiased}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .shell{display:grid;grid-template-columns:270px minmax(0,1fr);gap:0;max-width:1500px;margin:0 auto}
+
+  /* Sidebar index */
+  .rail{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;background:var(--rail);
+    color:var(--rail-ink);padding:22px 16px 40px;border-right:1px solid rgba(255,255,255,.06)}
+  .brandmark{display:flex;align-items:center;gap:11px;padding:6px 6px 16px}
+  .brandmark .glyph{width:34px;height:34px;border-radius:9px;background:var(--grad);flex:0 0 auto;
+    display:grid;place-items:center;font-weight:800;color:#fff;font-size:15px;letter-spacing:.02em}
+  .brandmark b{color:#fff;font-size:15px;letter-spacing:.14em;font-weight:700}
+  .brandmark span{display:block;font-size:10.5px;color:#7f93bd;letter-spacing:.22em;margin-top:1px}
+  .rail nav{font-size:13px}
+  .rail .grp{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#5f76a6;
+    margin:18px 8px 7px}
+  .rail a{display:block;color:var(--rail-ink);padding:5px 9px;border-radius:7px;text-decoration:none;
+    border-left:2px solid transparent}
+  .rail a:hover{background:rgba(255,255,255,.05);color:#fff}
+  .rail a.on{color:#fff;background:rgba(11,179,255,.12);border-left-color:var(--rail-active)}
+
+  main{padding:0 clamp(18px,4vw,64px) 120px;min-width:0}
+  .hero{padding:64px 0 40px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--cyan);font-weight:700}
+  h1{font-family:var(--display);font-size:clamp(34px,5.4vw,60px);line-height:1.02;margin:16px 0 0;
+    letter-spacing:-.02em;text-wrap:balance;font-weight:800}
+  h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lede{max-width:66ch;color:var(--ink-soft);font-size:18px;margin:18px 0 0}
+  .metastrip{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;
+    font-size:12.5px;color:var(--ink-soft);font-weight:600;display:inline-flex;gap:7px;align-items:center}
+  .chip b{color:var(--ink)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--grad);display:inline-block}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line);scroll-margin-top:16px}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  h2{font-family:var(--display);font-size:clamp(24px,3.4vw,36px);margin:10px 0 6px;letter-spacing:-.015em;
+    text-wrap:balance;font-weight:800}
+  h3{font-size:19px;margin:34px 0 10px;letter-spacing:-.01em;font-weight:700}
+  h4{font-size:14.5px;margin:22px 0 8px;letter-spacing:.01em;font-weight:700;color:var(--ink)}
+  p{max-width:72ch}
+  .sub{color:var(--ink-soft);max-width:74ch}
+  code{font-family:var(--mono);font-size:.86em;background:var(--wire);border:1px solid var(--line);
+    padding:1px 6px;border-radius:5px;color:var(--ink)}
+
+  /* Cards / grids */
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px;
+    box-shadow:var(--shadow)}
+  .card h4{margin-top:0}
+  .card .n{font-family:var(--display);font-size:30px;font-weight:800;letter-spacing:-.02em}
+  .card .n em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .card .cap{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+
+  /* Tables */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
+    background:var(--card)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--wire);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;position:sticky;top:0}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:color-mix(in srgb,var(--cyan) 6%,transparent)}
+  td code{white-space:nowrap}
+  .rolecell{font-weight:700}
+  .yes{color:var(--good);font-weight:700}.no{color:var(--muted)}.rd{color:var(--crit);font-weight:700}
+  .partial{color:var(--warn);font-weight:700}
+
+  /* Badges */
+  .b{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;
+    letter-spacing:.02em;border:1px solid transparent;white-space:nowrap}
+  .b.blue{background:color-mix(in srgb,var(--blue) 14%,transparent);color:var(--blue);border-color:color-mix(in srgb,var(--blue) 30%,transparent)}
+  .b.navy{background:color-mix(in srgb,var(--navy) 12%,transparent);color:var(--ink)}
+  .b.good{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+  .b.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .b.crit{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit)}
+  .b.mut{background:var(--wire);color:var(--muted);border-color:var(--line)}
+
+  /* Diagram cards — always light so mermaid default renders legibly in both themes */
+  .diagram{background:#f8fbff;border:1px solid #d9e4f4;border-radius:14px;padding:18px;margin:14px 0;
+    overflow-x:auto;box-shadow:var(--shadow)}
+  .diagram .cap{color:#5a6f95}
+  .diagram pre.mermaid{margin:0;min-width:520px;text-align:center;background:transparent;border:0}
+  .figlabel{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin:26px 0 2px;display:flex;gap:8px;align-items:center}
+  .figlabel .num{background:var(--grad);color:#fff;border-radius:6px;padding:1px 8px;font-size:11px}
+
+  /* Wireframe kit */
+  .wf{background:var(--wire);border:1px solid var(--wire-line);border-radius:14px;overflow:hidden;
+    box-shadow:var(--shadow);font-size:12px}
+  .wf-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:var(--card);
+    border-bottom:1px solid var(--wire-line)}
+  .wf-bar i{width:10px;height:10px;border-radius:50%;background:var(--wire-line);display:inline-block}
+  .wf-url{margin-left:8px;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--wire);
+    padding:3px 10px;border-radius:6px;flex:1}
+  .wf-body{display:grid}
+  .wf-nav{background:var(--navy);color:#a9bde0;padding:14px 12px;font-size:11px}
+  .wf-nav .lg{display:flex;align-items:center;gap:8px;color:#fff;font-weight:700;letter-spacing:.1em;margin-bottom:14px}
+  .wf-nav .lg span{width:22px;height:22px;border-radius:6px;background:var(--grad);display:inline-block}
+  .wf-nav ul{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+  .wf-nav li{padding:6px 9px;border-radius:6px;color:#9fb4d8}
+  .wf-nav li.on{background:rgba(11,179,255,.16);color:#fff}
+  .wf-main{padding:16px;display:grid;gap:12px;background:var(--wire)}
+  .wf-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .wf-title{height:15px;width:190px;border-radius:5px;background:var(--wire-ink);opacity:.85}
+  .wf-title.sm{width:120px;height:11px}
+  .wf-btn{height:30px;border-radius:8px;background:var(--grad);width:120px;color:#fff;display:grid;
+    place-items:center;font-weight:700;font-size:11px}
+  .wf-btn.ghost{background:var(--card);border:1px solid var(--wire-line);color:var(--muted)}
+  .wf-row{display:grid;gap:10px}
+  .wf-kpis{grid-template-columns:repeat(4,1fr)}
+  .wf-3{grid-template-columns:repeat(3,1fr)} .wf-2{grid-template-columns:repeat(2,1fr)}
+  .wf-2b{grid-template-columns:2fr 1fr}
+  .wf-card{background:var(--card);border:1px solid var(--wire-line);border-radius:10px;padding:12px;
+    display:grid;gap:8px}
+  .wf-kpi .v{font-size:22px;font-weight:800;color:var(--ink)}
+  .wf-kpi .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .wf-line{height:9px;border-radius:4px;background:var(--wire-block)}
+  .wf-line.w40{width:40%}.wf-line.w60{width:60%}.wf-line.w80{width:80%}.wf-line.w25{width:25%}
+  .wf-chart{height:120px;border-radius:8px;background:
+    linear-gradient(180deg,transparent,color-mix(in srgb,var(--cyan) 12%,transparent)),
+    repeating-linear-gradient(90deg,var(--wire-line) 0 1px,transparent 1px 46px);
+    position:relative;border:1px solid var(--wire-line)}
+  .wf-chart::after{content:"";position:absolute;left:0;right:0;bottom:0;height:64%;
+    background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--blue) 22%,transparent));
+    clip-path:polygon(0 70%,14% 55%,28% 62%,42% 38%,56% 46%,70% 24%,84% 33%,100% 12%,100% 100%,0 100%)}
+  .wf-tbl{background:var(--card);border:1px solid var(--wire-line);border-radius:10px;overflow:hidden}
+  .wf-tr{display:grid;grid-template-columns:1.4fr 1fr 1fr .8fr;gap:10px;padding:9px 12px;
+    border-bottom:1px solid var(--wire-line);align-items:center}
+  .wf-tr.head{background:var(--wire)}
+  .wf-tr:last-child{border-bottom:none}
+  .wf-pill{height:16px;border-radius:999px;background:color-mix(in srgb,var(--good) 22%,transparent);width:62px}
+  .wf-pill.w{background:color-mix(in srgb,var(--warn) 26%,transparent)}
+  .wf-pill.b{background:color-mix(in srgb,var(--blue) 22%,transparent)}
+  .wf-cap{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .wf-side{display:grid;gap:10px}
+  .wf-badge{font-size:10px;font-weight:700;color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,transparent);
+    padding:2px 8px;border-radius:999px;justify-self:start}
+  .wf-input{height:28px;border-radius:7px;background:var(--card);border:1px solid var(--wire-line)}
+  .wf-avatar{width:30px;height:30px;border-radius:50%;background:var(--grad)}
+  .wf-chatL,.wf-chatR{max-width:70%;padding:8px 11px;border-radius:11px;font-size:11px}
+  .wf-chatL{background:var(--card);border:1px solid var(--wire-line);justify-self:start;border-bottom-left-radius:3px}
+  .wf-chatR{background:var(--grad);color:#fff;justify-self:end;border-bottom-right-radius:3px}
+  @media(max-width:720px){.wf-kpis,.wf-3{grid-template-columns:repeat(2,1fr)}
+    .wf-2,.wf-2b{grid-template-columns:1fr}.wf-body .wf-nav{display:none}}
+
+  /* Callouts */
+  .note{border-left:3px solid var(--cyan);background:color-mix(in srgb,var(--cyan) 7%,transparent);
+    padding:12px 16px;border-radius:0 10px 10px 0;margin:16px 0;font-size:14px;color:var(--ink-soft)}
+  .note b{color:var(--ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--ink-soft);margin:10px 0 2px}
+  .legend span{display:inline-flex;gap:7px;align-items:center}
+  .sw{width:13px;height:13px;border-radius:4px;display:inline-block}
+
+  .tag-list{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+  .tag{font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);
+    padding:5px 11px;border-radius:8px}
+  .tag b{color:var(--blue)}
+  footer{padding:40px 0 0;color:var(--muted);font-size:13px}
+  .toc-mini{columns:2;gap:26px;font-size:13.5px}
+  @media(max-width:900px){.shell{grid-template-columns:1fr}.rail{display:none}.toc-mini{columns:1}}
+  hr.soft{border:0;border-top:1px solid var(--line);margin:30px 0}
+</style>
+
+<div class="shell">
+<aside class="rail">
+  <div class="brandmark"><span class="glyph">SA</span><div><b>SALIS AUTO</b><span>DESIGN BLUEPRINT</span></div></div>
+  <nav>
+    <div class="grp">Foundation</div>
+    <a href="#overview">Overview</a>
+    <a href="#design-system">Design system</a>
+    <a href="#ia">Information architecture</a>
+    <a href="#rbac">Roles &amp; RBAC matrix</a>
+    <div class="grp">Architecture</div>
+    <a href="#sysarch">System architecture</a>
+    <a href="#deploy">Deployment &amp; infra</a>
+    <a href="#erd">Entity relationships</a>
+    <a href="#dataflow">Data flow (DFD)</a>
+    <a href="#systemflow">System &amp; state flows</a>
+    <div class="grp">Portals &amp; screens</div>
+    <a href="#p-auth">Auth &amp; onboarding</a>
+    <a href="#p-platform">Platform Admin</a>
+    <a href="#p-mainapp">Admin / Manager app</a>
+    <a href="#p-advisor">Service Advisor</a>
+    <a href="#p-tech">Technician</a>
+    <a href="#p-store">Store Keeper</a>
+    <a href="#p-purchase">Purchase Agent</a>
+    <a href="#p-finance">Finance</a>
+    <a href="#p-support">Customer Support</a>
+    <a href="#p-hr">HR Manager</a>
+    <a href="#p-customer">Customer portal</a>
+    <div class="grp">Flows &amp; scenarios</div>
+    <a href="#userflows">User flows by role</a>
+    <a href="#sequences">Key scenarios</a>
+    <a href="#edge">Edge &amp; error states</a>
+    <a href="#coverage">Coverage matrix</a>
+  </nav>
+</aside>
+
+<main>
+  <!-- ============ HERO ============ -->
+  <header class="hero" id="overview">
+    <div class="kicker">Automotive ERP · Garage operations at scale · KSA-compliant</div>
+    <h1>SALIS&nbsp;AUTO — the complete <em>UI/UX &amp; systems</em> blueprint</h1>
+    <p class="lede">Every screen, feature by feature and module by module. Every role, every route, every
+      user-flow category — mapped against wireframes, data flows, system flows, entity relationships and
+      the platform architecture. One reference for design, engineering and QA to build and verify against.</p>
+    <div class="metastrip">
+      <span class="chip"><span class="dot"></span><b>10</b>&nbsp;portals</span>
+      <span class="chip"><span class="dot"></span><b>24</b>&nbsp;RBAC roles</span>
+      <span class="chip"><span class="dot"></span><b>235+</b>&nbsp;routes</span>
+      <span class="chip"><span class="dot"></span><b>175+</b>&nbsp;modules</span>
+      <span class="chip"><span class="dot"></span><b>320+</b>&nbsp;tables</span>
+      <span class="chip"><span class="dot"></span><b>27</b>&nbsp;diagrams</span>
+    </div>
+    <p class="sub" style="margin-top:26px">SALIS AUTO is a multi-tenant automotive ERP for franchise garage
+      networks — intake, diagnostics, workshop execution, parts &amp; inventory, billing with ZATCA e-invoicing,
+      HR, finance, franchise/enterprise management, plus AI, IoT/OBD and AR modules. This document is the
+      canonical map of its front-of-house.</p>
+  </header>
+
+  <!-- ============ DESIGN SYSTEM ============ -->
+  <section id="design-system">
+    <div class="eyebrow">01 · Foundation</div>
+    <h2>Design system</h2>
+    <p class="sub">A monochrome, brand-anchored system. Dark theme is the default operational surface;
+      a light mode is fully supported. Colour is spent on the brand blue gradient and on semantic state only —
+      orange is reserved strictly for warnings.</p>
+
+    <h3>Brand palette</h3>
+    <div class="grid g4">
+      <div class="card"><div style="height:46px;border-radius:9px;background:#0B1F3B;border:1px solid var(--line)"></div>
+        <h4>Deep Navy</h4><code>#0B1F3B</code><div class="wf-cap">Headers, rails, primary ground</div></div>
+      <div class="card"><div style="height:46px;border-radius:9px;background:linear-gradient(100deg,#0A5ED7,#0BB3FF)"></div>
+        <h4>Brand Gradient</h4><code>#0A5ED7 → #0BB3FF</code><div class="wf-cap">Primary actions, accents, success</div></div>
+      <div class="card"><div style="height:46px;border-radius:9px;background:#F97316"></div>
+        <h4>Signal Orange</h4><code>#F97316</code><div class="wf-cap">Warnings ONLY — never decorative</div></div>
+      <div class="card"><div style="height:46px;border-radius:9px;background:linear-gradient(90deg,#e5484d,#12a150)"></div>
+        <h4>Semantic</h4><code>#12A150 / #E5484D</code><div class="wf-cap">Good / critical states</div></div>
+    </div>
+
+    <div class="grid g3" style="margin-top:26px">
+      <div class="card">
+        <h4>Typography</h4>
+        <p class="sub" style="font-size:14px">Display &amp; UI: system grotesque stack (Segoe UI / system-ui)
+          for zero-latency, no-CDN rendering. Data &amp; codes: monospace with <code>tabular-nums</code> so
+          VINs, invoice IDs and money columns align.</p>
+        <div style="font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.02em">Aa Workshop 24</div>
+        <div style="font-family:var(--mono);margin-top:6px">SAR 1,240.50 · VIN WBA3</div>
+      </div>
+      <div class="card">
+        <h4>Layout archetypes (7)</h4>
+        <div class="tag-list">
+          <span class="tag">StandardPageLayout</span><span class="tag">StandardTablePage</span>
+          <span class="tag">DashboardPage</span><span class="tag">FormPage</span>
+          <span class="tag">AnalyticsPage</span><span class="tag">MobileCardPage</span>
+          <span class="tag">TabsPageLayout</span>
+        </div>
+        <p class="sub" style="font-size:13.5px">Every one of the 150+ pages is composed from these wrappers —
+          guaranteeing header, spacing, empty/loading/error states are consistent.</p>
+      </div>
+      <div class="card">
+        <h4>Global patterns</h4>
+        <ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-soft)">
+          <li>Resizable sidebar (200–400px, persisted)</li>
+          <li>RTL + Arabic, Hijri calendar, SAR/multi-currency</li>
+          <li>PWA + offline mode, WCAG 2.1 AA</li>
+          <li>Print system, undo/redo, keyboard shortcuts</li>
+          <li>Skeletons, ErrorBoundary, pagination controls</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Component inventory</h3>
+    <div class="tag-list">
+      <span class="tag">shadcn/ui + Radix primitives</span><span class="tag">Data table + column filters</span>
+      <span class="tag">KPI stat tile</span><span class="tag">Status pill / severity chip</span>
+      <span class="tag">Wizard / stepper</span><span class="tag">Drag-drop calendar</span>
+      <span class="tag">Barcode / VIN scanner</span><span class="tag">Signature pad</span>
+      <span class="tag">File / photo uploader</span><span class="tag">Live chat panel</span>
+      <span class="tag">Notification centre</span><span class="tag">ZATCA QR invoice</span>
+      <span class="tag">Recharts (area/bar/donut)</span><span class="tag">Toast + confirm dialog</span>
+      <span class="tag">Command palette</span><span class="tag">Empty / loading / error</span>
+    </div>
+  </section>
+
+  <!-- ============ INFORMATION ARCHITECTURE ============ -->
+  <section id="ia">
+    <div class="eyebrow">02 · Foundation</div>
+    <h2>Information architecture</h2>
+    <p class="sub">Login resolves <code>user.primaryPortal</code> and routes each role to its dedicated portal.
+      The Admin/Manager app carries the full workshop workflow organised into 18 sequence-ordered groups; the
+      other nine portals are focused, task-tuned surfaces.</p>
+
+    <div class="figlabel"><span class="num">Fig 1</span> Portal map — one entry per role cluster</div>
+    <div class="diagram"><div class="cap">Global sitemap</div>
+<pre class="mermaid">
+graph LR
+  L([Login / Welcome]):::e --> R{primaryPortal}
+  R --> PA["/platform-admin<br/>Platform Admin"]:::p
+  R --> DB["/dashboard<br/>Admin · Manager"]:::p
+  R --> SA["/service-advisor<br/>Service Advisor"]:::p
+  R --> TP["/technician-portal<br/>Technician"]:::p
+  R --> SK["/store-keeper<br/>Store Keeper"]:::p
+  R --> PU["/purchase-agent<br/>Purchase Agent"]:::p
+  R --> FI["/finance-portal<br/>Finance Manager"]:::p
+  R --> CS["/support-portal<br/>Customer Support"]:::p
+  R --> HR["/hr-management<br/>HR Manager"]:::p
+  R --> CU["/portal<br/>Customer"]:::p
+  classDef e fill:#0B1F3B,color:#fff,stroke:#0B1F3B;
+  classDef p fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+</pre></div>
+
+    <h3>Admin / Manager app — 18 workflow groups</h3>
+    <p class="sub">The sidebar mirrors the physical garage sequence: a job flows top-to-bottom through the nav.</p>
+    <div class="diagram"><div class="cap">Workflow-ordered navigation (main app)</div>
+<pre class="mermaid">
+graph TB
+  A[1 · Dashboard &amp; Overview] --> B[2 · Customer Intake &amp; Appointments]
+  B --> C[3 · Vehicle Management] --> D[4 · Inspection &amp; Check-In]
+  D --> E[5 · Diagnostics &amp; Assessment] --> F[6 · Service Planning &amp; Scheduling]
+  F --> G[7 · Parts &amp; Inventory] --> H[8 · Service Execution &amp; Operations]
+  H --> I[9 · Quality &amp; Delivery] --> J[10 · Billing &amp; Payments]
+  J --> K[11 · Analytics &amp; BI] --> M[12 · Customer Experience &amp; Growth]
+  M --> N[13 · Team &amp; HR] --> O[14 · Compliance &amp; Safety]
+  O --> P[15 · Enterprise &amp; Franchise] --> Q[16 · Emerging Technologies]
+  Q --> S[17 · AI &amp; Automation Hub] --> T[18 · System &amp; Settings]
+  classDef d fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class A,B,C,D,E,F,G,H,I,J,K,M,N,O,P,Q,S,T d;
+</pre></div>
+
+    <div class="note"><b>Reading the rest of this document:</b> each portal section below lists its routes and
+      screens (module per module), a signature wireframe, and links into the user-flow and scenario diagrams
+      that pass through it. The <a href="#coverage">coverage matrix</a> confirms every role × scenario is served.</div>
+  </section>
+
+  <!-- ============ RBAC ============ -->
+  <section id="rbac">
+    <div class="eyebrow">03 · Foundation</div>
+    <h2>Roles &amp; RBAC matrix</h2>
+    <p class="sub">24 professional roles resolve to 10 portals. Access is enforced server-side (route middleware,
+      garage-scoped tenant isolation) and reflected client-side via <code>roleNavigationMap</code>. The matrix
+      below shows capability by functional area for the primary roles.</p>
+
+    <div class="tablewrap" style="margin-top:14px">
+      <table>
+        <thead><tr><th>Capability area</th><th>Platform&nbsp;Admin</th><th>Admin/Mgr</th><th>Advisor</th>
+          <th>Tech</th><th>Store</th><th>Purchase</th><th>Finance</th><th>Support</th><th>HR</th><th>Customer</th></tr></thead>
+        <tbody>
+          <tr><td class="rolecell">Appointments / intake</td><td class="no">–</td><td class="yes">CRUD</td><td class="yes">CRUD</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="partial">view</td><td class="no">–</td><td class="partial">self</td></tr>
+          <tr><td class="rolecell">Job cards / execution</td><td class="partial">audit</td><td class="yes">CRUD</td><td class="yes">CRUD</td><td class="partial">assigned</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="partial">view</td><td class="no">–</td><td class="partial">track</td></tr>
+          <tr><td class="rolecell">Diagnostics / inspection</td><td class="no">–</td><td class="yes">CRUD</td><td class="yes">CRUD</td><td class="yes">CRUD</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="partial">view</td></tr>
+          <tr><td class="rolecell">Parts &amp; inventory</td><td class="partial">audit</td><td class="yes">CRUD</td><td class="partial">request</td><td class="partial">request</td><td class="yes">CRUD</td><td class="partial">order</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="partial">shop</td></tr>
+          <tr><td class="rolecell">Procurement / PO</td><td class="partial">audit</td><td class="yes">approve</td><td class="no">–</td><td class="no">–</td><td class="partial">receive</td><td class="yes">CRUD</td><td class="partial">pay</td><td class="no">–</td><td class="no">–</td><td class="no">–</td></tr>
+          <tr><td class="rolecell">Billing / invoices / ZATCA</td><td class="partial">audit</td><td class="yes">CRUD</td><td class="partial">issue</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">CRUD</td><td class="no">–</td><td class="no">–</td><td class="partial">pay</td></tr>
+          <tr><td class="rolecell">Finance / P&amp;L / payroll</td><td class="partial">view</td><td class="partial">view</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">CRUD</td><td class="no">–</td><td class="partial">payroll</td><td class="no">–</td></tr>
+          <tr><td class="rolecell">HR / attendance / leave</td><td class="partial">view</td><td class="partial">view</td><td class="no">–</td><td class="partial">self</td><td class="partial">self</td><td class="partial">self</td><td class="partial">payroll</td><td class="partial">self</td><td class="yes">CRUD</td><td class="no">–</td></tr>
+          <tr><td class="rolecell">Support / tickets / chat</td><td class="partial">audit</td><td class="partial">view</td><td class="partial">comms</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">CRUD</td><td class="no">–</td><td class="partial">raise</td></tr>
+          <tr><td class="rolecell">Analytics / BI</td><td class="yes">global</td><td class="yes">garage</td><td class="partial">own</td><td class="partial">own</td><td class="partial">stock</td><td class="partial">spend</td><td class="yes">finance</td><td class="partial">SLA</td><td class="partial">HR</td><td class="no">–</td></tr>
+          <tr><td class="rolecell">Franchise / multi-tenant</td><td class="yes">global</td><td class="partial">own</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td></tr>
+          <tr><td class="rolecell">RBAC / users / settings</td><td class="yes">global</td><td class="yes">garage</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="partial">HR</td><td class="partial">self</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--good)"></span> full CRUD / owner</span>
+      <span><span class="sw" style="background:var(--warn)"></span> scoped / partial</span>
+      <span><span class="sw" style="background:var(--muted)"></span> no access</span>
+    </div>
+
+    <div class="figlabel"><span class="num">Fig 2</span> RBAC entity model</div>
+    <div class="diagram"><div class="cap">Users · Roles · Permissions · Garage scoping</div>
+<pre class="mermaid">
+erDiagram
+  USER ||--o{ USER_ROLE : has
+  ROLE ||--o{ USER_ROLE : granted
+  ROLE ||--o{ ROLE_PERMISSION : includes
+  PERMISSION ||--o{ ROLE_PERMISSION : mapped
+  GARAGE ||--o{ USER : employs
+  GARAGE ||--o{ RESOURCE_SCOPE : isolates
+  PERMISSION ||--o{ RESOURCE_SCOPE : "156+ resources"
+  USER {
+    uuid id PK
+    string email
+    string primaryPortal
+    uuid garageId FK
+    bool active
+  }
+  ROLE { uuid id PK  string key  string label }
+  PERMISSION { uuid id PK  string resource  string action }
+</pre></div>
+  </section>
+
+  <!-- ============ SYSTEM ARCHITECTURE ============ -->
+  <section id="sysarch">
+    <div class="eyebrow">04 · Architecture</div>
+    <h2>System architecture</h2>
+    <p class="sub">Full-stack TypeScript. React 18 + Vite SPA (wouter routing, TanStack Query, shadcn/ui) over an
+      Express API with a hybrid router — modular <code>server/routes/*</code> take priority, legacy
+      <code>routes.ts</code> is fallback. PostgreSQL via Drizzle ORM. Passport session auth. WebSockets for
+      real-time. Integrations for payments, SMS, AI, calendar and ZATCA.</p>
+
+    <div class="figlabel"><span class="num">Fig 3</span> Container / component architecture</div>
+    <div class="diagram"><div class="cap">Clients → Frontend → API → Data / Realtime / Integrations</div>
+<pre class="mermaid">
+graph TB
+  subgraph Clients
+    W[Web SPA · PWA]:::c
+    Mob[Mobile web / offline]:::c
+    OBD[OBD / IoT scanners]:::c
+    POS[Barcode · Signature HW]:::c
+  end
+  subgraph Frontend["Frontend · React 18 + Vite"]
+    RT[wouter router · 235+ routes]:::f
+    AP[AuthProvider · React Query]:::f
+    UI[shadcn/ui · archetype wrappers]:::f
+    WSc[WS client /ws/chat]:::f
+  end
+  subgraph Backend["Backend · Express + TS"]
+    MW[Middleware · auth · RBAC · pagination · security]:::b
+    HR2[Hybrid router: routes/* &gt; routes.ts]:::b
+    SVC[Services · ZATCA · notifications · forecasting]:::b
+    WSS[WebSocket server · bay · chat · notifs]:::b
+  end
+  subgraph Data
+    PG[(PostgreSQL · Drizzle · 320+ tables)]:::d
+    SESS[(Session store)]:::d
+    OBJ[(Object / file storage)]:::d
+  end
+  subgraph Integrations
+    STR[Stripe · PayPal]:::i
+    TWI[Twilio SMS]:::i
+    OAI[OpenAI]:::i
+    GC[Google Calendar · Gmail]:::i
+    ZAT[ZATCA e-invoicing]:::i
+  end
+  W & Mob & OBD & POS --> RT
+  RT --> AP --> UI
+  UI -->|REST /api/*| MW
+  WSc <-->|realtime| WSS
+  MW --> HR2 --> SVC
+  HR2 --> PG
+  MW --> SESS
+  SVC --> OBJ
+  SVC --> STR & TWI & OAI & GC & ZAT
+  WSS --> PG
+  classDef c fill:#0B1F3B,color:#fff,stroke:#0B1F3B;
+  classDef f fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  classDef b fill:#e6fbff,stroke:#0BB3FF,color:#0B1F3B;
+  classDef d fill:#eef2f8,stroke:#41506a,color:#0B1F3B;
+  classDef i fill:#fff2e8,stroke:#F97316,color:#0B1F3B;
+</pre></div>
+
+    <h3>Frontend routing &amp; portal resolution</h3>
+    <div class="diagram"><div class="cap">Route guard + portal layout selection</div>
+<pre class="mermaid">
+graph LR
+  U[Request /*] --> G{Authenticated?}
+  G -- no --> LG[/login/]
+  G -- yes --> E[GET /api/user · enrich primaryPortal]
+  E --> M{roleNavigationMap}
+  M --> LAY[Select portal Layout]
+  LAY --> PG2[Render role-scoped pages]
+  LG --> E
+  classDef n fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class U,G,LG,E,M,LAY,PG2 n;
+</pre></div>
+  </section>
+
+  <!-- ============ DEPLOYMENT ============ -->
+  <section id="deploy">
+    <div class="eyebrow">05 · Architecture</div>
+    <h2>Deployment &amp; infrastructure</h2>
+    <p class="sub">Single deployable Node process serving the built SPA and the API, backed by managed Postgres.
+      Multi-tenant isolation is enforced by <code>garageId</code> scoping in every tenant query.</p>
+    <div class="figlabel"><span class="num">Fig 4</span> Runtime topology</div>
+    <div class="diagram"><div class="cap">Edge → App → Data · with tenant isolation</div>
+<pre class="mermaid">
+graph TB
+  CDN[CDN / static assets · PWA cache]:::e --> LB[HTTPS · TLS · proxy]:::e
+  LB --> APP1[Node app · Express + built SPA]:::a
+  LB -.WS.-> APP1
+  APP1 --> POOL[(PG connection pool)]:::a
+  POOL --> PGX[(PostgreSQL primary)]:::d
+  PGX --> RPL[(Read replica / backups)]:::d
+  APP1 --> SS[(Session store)]:::a
+  APP1 --> FILES[(Object storage · invoices/photos)]:::a
+  APP1 --> EXT[3rd-party APIs · Stripe/Twilio/OpenAI/ZATCA]:::i
+  subgraph Tenancy["Tenant isolation"]
+    T1[garageId scope on every query]:::t
+    T2[Row-level franchise partitioning]:::t
+  end
+  APP1 --- Tenancy
+  classDef e fill:#0B1F3B,color:#fff,stroke:#0B1F3B;
+  classDef a fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  classDef d fill:#eef2f8,stroke:#41506a,color:#0B1F3B;
+  classDef i fill:#fff2e8,stroke:#F97316,color:#0B1F3B;
+  classDef t fill:#e6fbff,stroke:#0BB3FF,color:#0B1F3B;
+</pre></div>
+  </section>
+
+  <!-- ============ ERD ============ -->
+  <section id="erd">
+    <div class="eyebrow">06 · Architecture</div>
+    <h2>Entity relationships</h2>
+    <p class="sub">The 320+ table schema centres on the operational spine: <b>Customer → Vehicle → Appointment →
+      Job Card → Job Items → Invoice → Payment</b>, with parts/inventory and procurement joined at job execution,
+      and garages/suppliers as tenant and supply anchors.</p>
+
+    <div class="figlabel"><span class="num">Fig 5</span> Core operational ERD</div>
+    <div class="diagram"><div class="cap">Service, parts &amp; billing spine</div>
+<pre class="mermaid">
+erDiagram
+  GARAGE ||--o{ CUSTOMER : serves
+  GARAGE ||--o{ USER : employs
+  GARAGE ||--o{ SERVICE_BAY : has
+  CUSTOMER ||--o{ VEHICLE : owns
+  CUSTOMER ||--o{ APPOINTMENT : books
+  VEHICLE ||--o{ APPOINTMENT : for
+  VEHICLE ||--o{ INSPECTION : undergoes
+  APPOINTMENT ||--|| JOB_CARD : becomes
+  JOB_CARD ||--o{ JOB_ITEM : contains
+  JOB_CARD ||--o{ INSPECTION : includes
+  JOB_CARD }o--|| USER : assigned_technician
+  JOB_CARD }o--|| SERVICE_BAY : occupies
+  JOB_ITEM }o--o| PART : consumes
+  PART ||--o{ INVENTORY_STOCK : stocked_as
+  INVENTORY_STOCK }o--|| GARAGE : at
+  SUPPLIER ||--o{ PART : supplies
+  SUPPLIER ||--o{ PURCHASE_ORDER : fulfils
+  PURCHASE_ORDER ||--o{ PO_LINE : has
+  PO_LINE }o--|| PART : orders
+  JOB_CARD ||--|| INVOICE : billed_as
+  INVOICE ||--o{ INVOICE_LINE : has
+  INVOICE ||--o{ PAYMENT : settled_by
+  INVOICE ||--o| ZATCA_DOC : e_invoiced
+  CUSTOMER {
+    uuid id PK
+    uuid garageId FK
+    string name
+    string phone
+    string trn
+  }
+  VEHICLE {
+    uuid id PK
+    uuid customerId FK
+    string vin
+    string plate
+    string makeModel
+    int odometer
+  }
+  JOB_CARD {
+    uuid id PK
+    uuid vehicleId FK
+    uuid technicianId FK
+    string status
+    decimal total
+  }
+  INVOICE {
+    uuid id PK
+    uuid jobCardId FK
+    decimal subtotal
+    decimal vat
+    decimal total
+    string status
+  }
+</pre></div>
+
+    <div class="figlabel"><span class="num">Fig 6</span> Supporting domains</div>
+    <div class="grid g2">
+      <div class="diagram"><div class="cap">HR &amp; Finance</div>
+<pre class="mermaid">
+erDiagram
+  EMPLOYEE ||--o{ ATTENDANCE : logs
+  EMPLOYEE ||--o{ LEAVE_REQUEST : files
+  EMPLOYEE ||--o{ PAYROLL_RUN : paid_in
+  PAYROLL_RUN ||--o{ PAYSLIP : produces
+  GARAGE ||--o{ EXPENSE : incurs
+  GARAGE ||--o{ BUDGET : plans
+  INVOICE ||--o{ REVENUE_ENTRY : posts
+  EXPENSE ||--o{ PL_ENTRY : rolls_up
+  REVENUE_ENTRY ||--o{ PL_ENTRY : rolls_up
+</pre></div>
+      <div class="diagram"><div class="cap">Support &amp; Growth</div>
+<pre class="mermaid">
+erDiagram
+  CUSTOMER ||--o{ TICKET : raises
+  TICKET ||--o{ TICKET_MSG : thread
+  TICKET }o--|| USER : assigned_agent
+  TICKET ||--o| ESCALATION : may_escalate
+  CUSTOMER ||--o{ LOYALTY_ACCOUNT : holds
+  LOYALTY_ACCOUNT ||--o{ POINTS_TXN : accrues
+  CUSTOMER ||--o{ REVIEW : leaves
+  TICKET ||--o| SLA_TIMER : bound_by
+</pre></div>
+    </div>
+  </section>
+
+  <!-- ============ DATA FLOW ============ -->
+  <section id="dataflow">
+    <div class="eyebrow">07 · Architecture</div>
+    <h2>Data flow (DFD)</h2>
+    <p class="sub">How information moves between external actors, processes and stores — context level, then a
+      level-1 decomposition of the service-to-cash pipeline.</p>
+
+    <div class="figlabel"><span class="num">Fig 7</span> DFD Level 0 — context</div>
+    <div class="diagram"><div class="cap">External entities ↔ SALIS AUTO ↔ stores</div>
+<pre class="mermaid">
+graph LR
+  CUST([Customer]):::x -->|booking · approval · payment| SYS((SALIS AUTO)):::s
+  SYS -->|status · invoice · receipt| CUST
+  STAFF([Garage staff]):::x -->|intake · diagnosis · work| SYS
+  SYS -->|jobs · schedules · payslips| STAFF
+  SUP([Supplier]):::x -->|catalogue · fulfilment| SYS
+  SYS -->|purchase orders| SUP
+  GOV([ZATCA / Gov]):::x -->|clearance| SYS
+  SYS -->|e-invoice XML| GOV
+  PAY([Payment / SMS / AI]):::x <-->|txn · OTP · inference| SYS
+  SYS --- DS[(Operational DB · files)]:::d
+  classDef x fill:#0B1F3B,color:#fff,stroke:#0B1F3B;
+  classDef s fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  classDef d fill:#eef2f8,stroke:#41506a,color:#0B1F3B;
+</pre></div>
+
+    <div class="figlabel"><span class="num">Fig 8</span> DFD Level 1 — service-to-cash</div>
+    <div class="diagram"><div class="cap">Processes (P) and data stores (D)</div>
+<pre class="mermaid">
+graph TB
+  CUST([Customer]):::x --> P1[P1 · Book appointment]:::p
+  P1 --> D1[(D1 Appointments)]:::d
+  P1 --> P2[P2 · Check-in &amp; inspect]:::p
+  D2[(D2 Vehicles)]:::d --- P2
+  P2 --> P3[P3 · Diagnose &amp; estimate]:::p
+  P3 --> D3[(D3 Job cards)]:::d
+  P3 -->|quote| CUST
+  CUST -->|approve| P4[P4 · Execute work]:::p
+  P4 --> P5[P5 · Reserve/issue parts]:::p
+  P5 --- D4[(D4 Inventory)]:::d
+  P5 -->|low stock| P6[P6 · Procure]:::p
+  P6 --- D5[(D5 Purchase orders)]:::d
+  P4 --> P7[P7 · QC &amp; deliver]:::p
+  P7 --> P8[P8 · Invoice + ZATCA]:::p
+  P8 --> D6[(D6 Invoices)]:::d
+  P8 --> P9[P9 · Collect payment]:::p
+  P9 --> D7[(D7 Payments)]:::d
+  P9 -->|receipt| CUST
+  D6 & D7 --> P10[P10 · Finance &amp; BI]:::p
+  classDef x fill:#0B1F3B,color:#fff,stroke:#0B1F3B;
+  classDef p fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  classDef d fill:#eef2f8,stroke:#41506a,color:#0B1F3B;
+</pre></div>
+  </section>
+
+  <!-- ============ SYSTEM & STATE FLOWS ============ -->
+  <section id="systemflow">
+    <div class="eyebrow">08 · Architecture</div>
+    <h2>System &amp; state flows</h2>
+    <p class="sub">Lifecycle state machines for the four objects every role touches. These define the status
+      pills, allowed transitions and the guards enforced by the API.</p>
+
+    <div class="grid g2">
+      <div>
+        <div class="figlabel"><span class="num">Fig 9</span> Job card lifecycle</div>
+        <div class="diagram"><div class="cap">Appointment → delivered</div>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Scheduled
+  Scheduled --> CheckedIn: arrive
+  CheckedIn --> Inspecting
+  Inspecting --> Estimated
+  Estimated --> Approved: customer OK
+  Estimated --> Declined: reject
+  Approved --> InProgress: assign bay/tech
+  InProgress --> AwaitingParts: shortage
+  AwaitingParts --> InProgress: parts issued
+  InProgress --> QC
+  QC --> Rework: fail
+  Rework --> QC
+  QC --> Ready: pass
+  Ready --> Delivered: handover
+  Delivered --> [*]
+  Declined --> [*]
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 10</span> Invoice lifecycle</div>
+        <div class="diagram"><div class="cap">Draft → paid · ZATCA cleared</div>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Issued: finalize
+  Issued --> Cleared: ZATCA accept
+  Issued --> Rejected: ZATCA reject
+  Rejected --> Draft: correct
+  Cleared --> PartPaid: partial
+  Cleared --> Paid: full
+  PartPaid --> Paid
+  Cleared --> Overdue: past due
+  Overdue --> Paid
+  Paid --> Refunded: credit note
+  Paid --> [*]
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 11</span> Appointment lifecycle</div>
+        <div class="diagram"><div class="cap">Requested → closed</div>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Requested
+  Requested --> Confirmed: slot assigned
+  Confirmed --> Reminded: SMS T-24h
+  Reminded --> Arrived
+  Confirmed --> NoShow: missed
+  Confirmed --> Rescheduled
+  Rescheduled --> Confirmed
+  Arrived --> Converted: job card
+  Converted --> [*]
+  NoShow --> [*]
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 12</span> Purchase order lifecycle</div>
+        <div class="diagram"><div class="cap">Draft → received</div>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> PendingApproval: submit
+  PendingApproval --> Approved
+  PendingApproval --> Rejected
+  Approved --> Sent: to supplier
+  Sent --> PartReceived
+  PartReceived --> Received
+  Sent --> Received
+  Received --> Reconciled: 3-way match
+  Reconciled --> [*]
+  Rejected --> [*]
+</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ AUTH ============ -->
+  <section id="p-auth">
+    <div class="eyebrow">09 · Portals &amp; screens</div>
+    <h2>Auth &amp; onboarding</h2>
+    <p class="sub">Custom email/password (Passport LocalStrategy), optional 2FA (speakeasy + QR), session cookies.
+      <code>/welcome</code> resolves and redirects to the role portal.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Notes / scenarios</th></tr></thead>
+      <tbody>
+        <tr><td><code>/login</code></td><td>Sign in</td><td>Email+password, error states, lockout, "forgot"</td></tr>
+        <tr><td><code>/register</code></td><td>Register</td><td>Customer self-serve; staff created by admin/HR</td></tr>
+        <tr><td><code>/forgot-password</code></td><td>Reset request</td><td>Email/SMS OTP</td></tr>
+        <tr><td><code>/reset-password</code></td><td>Set new password</td><td>Token-gated</td></tr>
+        <tr><td><code>/2fa</code></td><td>Two-factor</td><td>TOTP verify, QR enrol, recovery codes</td></tr>
+        <tr><td><code>/welcome</code></td><td>Portal router</td><td>Reads <code>primaryPortal</code>, redirects</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="figlabel"><span class="num">WF 1</span> Sign in</div>
+    <div class="wf" style="max-width:520px">
+      <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">salisauto.com/login</span></div>
+      <div class="wf-main" style="place-items:center;padding:30px 24px">
+        <div class="wf-avatar" style="width:44px;height:44px;border-radius:11px"></div>
+        <div class="wf-title" style="width:140px"></div>
+        <div style="width:100%;max-width:320px;display:grid;gap:12px;margin-top:6px">
+          <div class="wf-input"></div><div class="wf-input"></div>
+          <div class="wf-btn" style="width:100%">Sign in</div>
+          <div style="display:flex;justify-content:space-between"><div class="wf-line w40"></div><div class="wf-line w25"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLATFORM ADMIN ============ -->
+  <section id="p-platform">
+    <div class="eyebrow">Portal 01 · <span class="b blue">PLATFORM_ADMIN</span></div>
+    <h2>Platform Admin</h2>
+    <p class="sub">Standalone full-screen console (deep-navy chrome, no main sidebar). An 8-tab command centre
+      over the entire multi-tenant network — garages, suppliers, e-commerce, support, billing, RBAC and health.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route / tab</th><th>Screen</th><th>Key widgets &amp; scenarios</th></tr></thead>
+      <tbody>
+        <tr><td><code>/platform-admin</code> · Overview</td><td>Network KPIs</td><td>GMV, active garages, tickets, uptime; trend charts</td></tr>
+        <tr><td>· Garages</td><td>Tenant directory</td><td>Onboard, suspend, plan, impersonate, per-garage drill</td></tr>
+        <tr><td>· Suppliers</td><td>Supplier network</td><td>Approve, catalogue sync, performance scoring</td></tr>
+        <tr><td>· E-Commerce</td><td>Parts marketplace</td><td>Listings, orders, payouts, disputes</td></tr>
+        <tr><td>· Help &amp; Support</td><td>Global tickets</td><td>Cross-tenant queue, escalations, SLA breaches</td></tr>
+        <tr><td>· Billing</td><td>Subscriptions</td><td>Plans, invoices to garages, dunning, MRR</td></tr>
+        <tr><td>· Roles &amp; RBAC</td><td>Access control</td><td>24 roles, 156+ resources, permission editor</td></tr>
+        <tr><td>· System Health</td><td>Ops console</td><td>Uptime, jobs, error rate, DB, integrations status</td></tr>
+      </tbody>
+    </table></div>
+    <p class="sub" style="font-size:13.5px;margin-top:10px"><b>APIs:</b> <code>/api/platform-admin/stats</code>,
+      <code>/garages</code>, <code>/suppliers</code>, <code>/stores</code>, <code>/support-tickets</code>,
+      <code>/system-health</code>.</p>
+
+    <div class="figlabel"><span class="num">WF 2</span> Platform Admin — Overview</div>
+    <div class="wf">
+      <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">salisauto.com/platform-admin</span></div>
+      <div class="wf-body" style="grid-template-columns:200px 1fr">
+        <nav class="wf-nav"><div class="lg"><span></span>PLATFORM</div>
+          <ul><li class="on">Overview</li><li>Garages</li><li>Suppliers</li><li>E-Commerce</li>
+            <li>Help &amp; Support</li><li>Billing</li><li>Roles &amp; RBAC</li><li>System Health</li></ul></nav>
+        <div class="wf-main">
+          <div class="wf-h"><div class="wf-title"></div><div style="display:flex;gap:8px"><div class="wf-btn ghost">Export</div><div class="wf-btn">Onboard garage</div></div></div>
+          <div class="wf-row wf-kpis">
+            <div class="wf-card wf-kpi"><div class="l">Network GMV</div><div class="v">SAR 4.2M</div></div>
+            <div class="wf-card wf-kpi"><div class="l">Active garages</div><div class="v">128</div></div>
+            <div class="wf-card wf-kpi"><div class="l">Open tickets</div><div class="v">37</div></div>
+            <div class="wf-card wf-kpi"><div class="l">Uptime</div><div class="v">99.98%</div></div>
+          </div>
+          <div class="wf-row wf-2b">
+            <div class="wf-card"><div class="wf-line w40"></div><div class="wf-chart"></div></div>
+            <div class="wf-card"><div class="wf-line w60"></div>
+              <div class="wf-line w80"></div><div class="wf-line"></div><div class="wf-line w60"></div><div class="wf-line w80"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MAIN APP ============ -->
+  <section id="p-mainapp">
+    <div class="eyebrow">Portal 02 · <span class="b blue">ADMIN / MANAGER</span></div>
+    <h2>Admin / Manager app <code>/dashboard</code></h2>
+    <p class="sub">The full workshop ERP. Resizable sidebar with all 18 workflow groups; managers see every
+      module scoped to their garage. Below: the module inventory by group (module per module).</p>
+
+    <div class="grid g2">
+      <div class="tablewrap"><table>
+        <thead><tr><th>Group</th><th>Modules / routes</th></tr></thead><tbody>
+        <tr><td class="rolecell">1 · Dashboard</td><td><code>/dashboard</code> KPIs, <code>/service-bay-dashboard</code>, alerts feed</td></tr>
+        <tr><td class="rolecell">2 · Intake</td><td><code>/appointments</code>, <code>/appointments/new</code>, <code>/walk-in</code>, <code>/customers</code></td></tr>
+        <tr><td class="rolecell">3 · Vehicles</td><td><code>/vehicles</code>, VIN decode, <code>/service-history</code></td></tr>
+        <tr><td class="rolecell">4 · Inspection</td><td><code>/check-in</code>, <code>/inspections</code>, photo/damage map</td></tr>
+        <tr><td class="rolecell">5 · Diagnostics</td><td><code>/diagnostics</code>, <code>/obd</code>, <code>/estimates</code></td></tr>
+        <tr><td class="rolecell">6 · Planning</td><td><code>/workshop-calendar</code>, <code>/scheduling</code>, bay/tech allocation</td></tr>
+        <tr><td class="rolecell">7 · Parts</td><td><code>/parts</code>, <code>/inventory</code>, <code>/automated-reordering</code></td></tr>
+        <tr><td class="rolecell">8 · Execution</td><td><code>/job-cards</code>, <code>/active-jobs</code>, <code>/ar-overlay</code></td></tr>
+        <tr><td class="rolecell">9 · Quality</td><td><code>/quality-control</code>, <code>/delivery</code>, road-test sign-off</td></tr>
+      </tbody></table></div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Group</th><th>Modules / routes</th></tr></thead><tbody>
+        <tr><td class="rolecell">10 · Billing</td><td><code>/invoices</code>, <code>/payments</code>, <code>/quotations</code></td></tr>
+        <tr><td class="rolecell">11 · Analytics</td><td><code>/analytics</code>, <code>/reports</code>, revenue &amp; utilisation</td></tr>
+        <tr><td class="rolecell">12 · Growth</td><td><code>/loyalty-program</code>, <code>/campaigns</code>, <code>/reviews</code></td></tr>
+        <tr><td class="rolecell">13 · Team &amp; HR</td><td><code>/hr-management</code>, <code>/attendance</code>, <code>/payroll</code></td></tr>
+        <tr><td class="rolecell">14 · Compliance</td><td><code>/compliance</code>, <code>/safety</code>, <code>/vat-zatca</code></td></tr>
+        <tr><td class="rolecell">15 · Franchise</td><td><code>/franchise</code>, <code>/branches</code>, licensing</td></tr>
+        <tr><td class="rolecell">16 · Emerging</td><td>AR/VR, blockchain, IoT, energy mgmt</td></tr>
+        <tr><td class="rolecell">17 · AI Hub</td><td><code>/ai-hub</code>, forecasting, assistant, auto-triage</td></tr>
+        <tr><td class="rolecell">18 · Settings</td><td><code>/settings</code>, users, roles, localisation, print</td></tr>
+      </tbody></table></div>
+    </div>
+
+    <div class="figlabel"><span class="num">WF 3</span> Manager dashboard (archetype: DashboardPage)</div>
+    <div class="wf">
+      <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">salisauto.com/dashboard</span></div>
+      <div class="wf-body" style="grid-template-columns:170px 1fr">
+        <nav class="wf-nav"><div class="lg"><span></span>SALIS</div>
+          <ul><li class="on">Dashboard</li><li>Appointments</li><li>Vehicles</li><li>Diagnostics</li>
+            <li>Job Cards</li><li>Parts</li><li>Invoices</li><li>Analytics</li><li>HR</li><li>Settings</li></ul></nav>
+        <div class="wf-main">
+          <div class="wf-h"><div><div class="wf-title"></div><div class="wf-cap">Al Salis — Riyadh branch · Today</div></div>
+            <div class="wf-btn">New job card</div></div>
+          <div class="wf-row wf-kpis">
+            <div class="wf-card wf-kpi"><div class="l">Bays busy</div><div class="v">7 / 10</div></div>
+            <div class="wf-card wf-kpi"><div class="l">Jobs today</div><div class="v">23</div></div>
+            <div class="wf-card wf-kpi"><div class="l">Revenue</div><div class="v">SAR 61k</div></div>
+            <div class="wf-card wf-kpi"><div class="l">Low stock</div><div class="v" style="color:var(--warn)">9</div></div>
+          </div>
+          <div class="wf-row wf-2b">
+            <div class="wf-card"><div class="wf-line w40"></div><div class="wf-chart"></div></div>
+            <div class="wf-side">
+              <div class="wf-card"><div class="wf-badge">Bay occupancy</div><div class="wf-line w80"></div><div class="wf-line w60"></div><div class="wf-line"></div></div>
+              <div class="wf-card"><div class="wf-badge">Alerts</div><div class="wf-line w60"></div><div class="wf-line w80"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SERVICE ADVISOR ============ -->
+  <section id="p-advisor">
+    <div class="eyebrow">Portal 03 · <span class="b blue">ADVISOR</span></div>
+    <h2>Service Advisor <code>/service-advisor</code></h2>
+    <p class="sub">The front-desk cockpit — turning arrivals into approved, executed, invoiced jobs. 10 pages.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Primary actions</th></tr></thead><tbody>
+      <tr><td><code>/service-advisor</code></td><td>Dashboard</td><td>Today's board, arrivals, approvals due</td></tr>
+      <tr><td><code>/service-advisor/appointments</code></td><td>Appointments</td><td>Confirm, reschedule, no-show</td></tr>
+      <tr><td><code>/service-advisor/vehicle-check-in</code></td><td>Vehicle check-in</td><td>Photos, damage map, odometer, fuel</td></tr>
+      <tr><td><code>/service-advisor/job-cards</code></td><td>Job cards</td><td>Open, assign, track status</td></tr>
+      <tr><td><code>/service-advisor/estimates</code></td><td>Estimates</td><td>Build quote, send for approval</td></tr>
+      <tr><td><code>/service-advisor/active-jobs</code></td><td>Active jobs</td><td>Live progress, blockers</td></tr>
+      <tr><td><code>/service-advisor/customer-comms</code></td><td>Customer comms</td><td>SMS/WhatsApp/chat updates</td></tr>
+      <tr><td><code>/service-advisor/invoices</code></td><td>Invoices</td><td>Generate, collect, hand over</td></tr>
+      <tr><td><code>/service-advisor/service-history</code></td><td>Service history</td><td>Per-vehicle timeline</td></tr>
+      <tr><td><code>/service-advisor/profile</code></td><td>My profile</td><td>Targets, availability</td></tr>
+    </tbody></table></div>
+
+    <div class="figlabel"><span class="num">WF 4</span> Job card detail (archetype: FormPage + Tabs)</div>
+    <div class="wf">
+      <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">salisauto.com/service-advisor/job-cards/JC-2049</span></div>
+      <div class="wf-main">
+        <div class="wf-h"><div><div class="wf-title"></div><div class="wf-cap">JC-2049 · Toyota Camry · ABC-1234 · Estimated</div></div>
+          <div style="display:flex;gap:8px"><div class="wf-btn ghost">Send estimate</div><div class="wf-btn">Convert to invoice</div></div></div>
+        <div class="wf-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="wf-badge">Overview</div><div class="wf-badge" style="opacity:.5">Inspection</div>
+          <div class="wf-badge" style="opacity:.5">Parts</div><div class="wf-badge" style="opacity:.5">Labour</div></div>
+        <div class="wf-row wf-2b">
+          <div class="wf-tbl">
+            <div class="wf-tr head"><div class="wf-line w60"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-line w25"></div></div>
+            <div class="wf-tr"><div class="wf-line w80"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-pill b"></div></div>
+            <div class="wf-tr"><div class="wf-line w60"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-pill w"></div></div>
+            <div class="wf-tr"><div class="wf-line w80"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-pill"></div></div>
+          </div>
+          <div class="wf-side">
+            <div class="wf-card"><div class="wf-badge">Customer</div><div class="wf-line w80"></div><div class="wf-line w60"></div></div>
+            <div class="wf-card"><div class="wf-badge">Totals</div><div class="wf-line w60"></div><div class="wf-line w40"></div>
+              <div class="wf-line w80"></div><div class="wf-btn" style="width:100%">Approve · SAR 1,240</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TECHNICIAN ============ -->
+  <section id="p-tech">
+    <div class="eyebrow">Portal 04 · <span class="b blue">TECHNICIAN</span></div>
+    <h2>Technician <code>/technician-portal</code></h2>
+    <p class="sub">Mobile-first (MobileCardPage). A technician's day: assigned jobs, step-by-step execution,
+      parts requests, time logging, AR guidance, QC submission.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Actions / scenarios</th></tr></thead><tbody>
+      <tr><td><code>/technician-portal</code></td><td>My jobs</td><td>Assigned queue, priority, bay</td></tr>
+      <tr><td><code>/technician-portal/job/:id</code></td><td>Job execution</td><td>Task checklist, start/pause timer, photos</td></tr>
+      <tr><td><code>/technician-portal/inspection/:id</code></td><td>Inspection</td><td>Multi-point checklist, pass/fail, notes</td></tr>
+      <tr><td><code>/technician-portal/parts-request</code></td><td>Parts request</td><td>Request from store, await issue</td></tr>
+      <tr><td><code>/technician-portal/diagnostics</code></td><td>OBD diagnostics</td><td>Read DTCs, attach to job</td></tr>
+      <tr><td><code>/ar-overlay</code></td><td>AR guide</td><td>Step-by-step visual repair aid</td></tr>
+      <tr><td><code>/technician-portal/timesheet</code></td><td>Timesheet</td><td>Labour hours per job</td></tr>
+      <tr><td><code>/technician-portal/qc</code></td><td>QC submit</td><td>Mark ready, flag rework</td></tr>
+      <tr><td><code>/technician-portal/profile</code></td><td>Profile</td><td>Skills, certifications, attendance</td></tr>
+    </tbody></table></div>
+
+    <div class="figlabel"><span class="num">WF 5</span> Technician — job execution (mobile)</div>
+    <div class="wf" style="max-width:340px">
+      <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">…/technician-portal/job/JC-2049</span></div>
+      <div class="wf-main">
+        <div class="wf-h"><div class="wf-title sm"></div><div class="wf-pill w"></div></div>
+        <div class="wf-cap">Brake pad replacement · Bay 4</div>
+        <div class="wf-card"><div class="wf-badge">Tasks</div>
+          <div style="display:flex;gap:8px;align-items:center"><div class="wf-pill" style="width:16px;height:16px;border-radius:5px"></div><div class="wf-line w80"></div></div>
+          <div style="display:flex;gap:8px;align-items:center"><div class="wf-pill" style="width:16px;height:16px;border-radius:5px"></div><div class="wf-line w60"></div></div>
+          <div style="display:flex;gap:8px;align-items:center"><div class="wf-pill w" style="width:16px;height:16px;border-radius:5px"></div><div class="wf-line"></div></div>
+        </div>
+        <div class="wf-row wf-2"><div class="wf-btn ghost">Request part</div><div class="wf-btn ghost">Pause</div></div>
+        <div class="wf-btn" style="width:100%">Submit for QC</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STORE KEEPER ============ -->
+  <section id="p-store">
+    <div class="eyebrow">Portal 05 · <span class="b blue">STORE_KEEPER</span></div>
+    <h2>Store Keeper <code>/store-keeper</code></h2>
+    <p class="sub">Inventory command with barcode workflows. 11 pages covering receipt, issue, returns and reorder.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Actions / scenarios</th></tr></thead><tbody>
+      <tr><td><code>/store-keeper</code></td><td>Dashboard</td><td>Stock value, movements, alerts</td></tr>
+      <tr><td><code>/store-keeper/stock</code></td><td>Stock overview</td><td>Search, bin locations, valuation</td></tr>
+      <tr><td><code>/store-keeper/low-stock</code></td><td>Low-stock alerts</td><td>Reorder points breached</td></tr>
+      <tr><td><code>/store-keeper/receive</code></td><td>Receive stock</td><td>Against PO, scan-in, discrepancies</td></tr>
+      <tr><td><code>/store-keeper/issue</code></td><td>Issue parts</td><td>Fulfil job requests, deduct stock</td></tr>
+      <tr><td><code>/store-keeper/search</code></td><td>Parts search</td><td>Cross-reference, compatibility</td></tr>
+      <tr><td><code>/store-keeper/suppliers</code></td><td>Suppliers</td><td>Lead times, pricing</td></tr>
+      <tr><td><code>/store-keeper/returns</code></td><td>Returns</td><td>RMA, defective, over-issue</td></tr>
+      <tr><td><code>/store-keeper/scanner</code></td><td>Barcode scanner</td><td>Camera/handheld scan</td></tr>
+      <tr><td><code>/store-keeper/reports</code></td><td>Reports</td><td>Turnover, dead stock, shrinkage</td></tr>
+      <tr><td><code>/store-keeper/profile</code></td><td>Profile</td><td>Warehouse, shift</td></tr>
+    </tbody></table></div>
+
+    <div class="figlabel"><span class="num">WF 6</span> Issue parts (scan-driven)</div>
+    <div class="wf">
+      <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">salisauto.com/store-keeper/issue</span></div>
+      <div class="wf-main">
+        <div class="wf-h"><div class="wf-title"></div><div class="wf-btn">Scan barcode</div></div>
+        <div class="wf-row wf-2b">
+          <div class="wf-tbl">
+            <div class="wf-tr head"><div class="wf-line w60"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-line w25"></div></div>
+            <div class="wf-tr"><div class="wf-line w80"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-pill"></div></div>
+            <div class="wf-tr"><div class="wf-line w60"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-pill"></div></div>
+            <div class="wf-tr"><div class="wf-line w80"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-pill w"></div></div>
+          </div>
+          <div class="wf-side">
+            <div class="wf-card"><div class="wf-badge">Request JC-2049</div><div class="wf-line w80"></div><div class="wf-line w60"></div>
+              <div class="wf-btn" style="width:100%">Confirm issue</div></div>
+            <div class="wf-card"><div class="wf-badge">On hand</div><div class="wf-kpi"><div class="v" style="font-size:18px">14 pcs</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PURCHASE AGENT ============ -->
+  <section id="p-purchase">
+    <div class="eyebrow">Portal 06 · <span class="b blue">PURCHASE_AGENT</span></div>
+    <h2>Purchase Agent <code>/purchase-agent</code></h2>
+    <p class="sub">Procurement — turning reorder demand and requisitions into approved, received purchase orders
+      across the supplier network and B2B parts marketplace.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Actions / scenarios</th></tr></thead><tbody>
+      <tr><td><code>/purchase-agent</code></td><td>Dashboard</td><td>Open POs, spend, pending approvals</td></tr>
+      <tr><td><code>/purchase-agent/requisitions</code></td><td>Requisitions</td><td>From low-stock + manual requests</td></tr>
+      <tr><td><code>/purchase-agent/rfq</code></td><td>RFQ / quotes</td><td>Compare supplier bids</td></tr>
+      <tr><td><code>/purchase-agent/purchase-orders</code></td><td>Purchase orders</td><td>Create, approve, send, track</td></tr>
+      <tr><td><code>/purchase-agent/suppliers</code></td><td>Suppliers</td><td>Catalogue, terms, scorecards</td></tr>
+      <tr><td><code>/purchase-agent/marketplace</code></td><td>B2B marketplace</td><td>Source parts across network</td></tr>
+      <tr><td><code>/purchase-agent/receiving</code></td><td>Receiving</td><td>3-way match with store</td></tr>
+      <tr><td><code>/purchase-agent/reports</code></td><td>Spend reports</td><td>By supplier, category, savings</td></tr>
+      <tr><td><code>/purchase-agent/profile</code></td><td>Profile</td><td>Approval limits</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <!-- ============ FINANCE ============ -->
+  <section id="p-finance">
+    <div class="eyebrow">Portal 07 · <span class="b blue">FINANCE_MANAGER</span></div>
+    <h2>Finance <code>/finance-portal</code></h2>
+    <p class="sub">The money surface — invoicing, collections, expenses, payroll, budgeting, P&amp;L, and the full
+      KSA tax stack (VAT, ZATCA e-invoicing, Zakat). 12 pages.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Actions / scenarios</th></tr></thead><tbody>
+      <tr><td><code>/finance-portal</code></td><td>Dashboard</td><td>Cash position, AR/AP, MTD P&amp;L</td></tr>
+      <tr><td><code>/finance-portal/invoices</code></td><td>Invoices</td><td>Issue, ZATCA clear, credit notes</td></tr>
+      <tr><td><code>/finance-portal/payments</code></td><td>Payments</td><td>Reconcile Stripe/PayPal/cash</td></tr>
+      <tr><td><code>/finance-portal/expenses</code></td><td>Expenses</td><td>Capture, approve, categorise</td></tr>
+      <tr><td><code>/finance-portal/payroll</code></td><td>Payroll</td><td>Runs, payslips, GOSI</td></tr>
+      <tr><td><code>/finance-portal/budget</code></td><td>Budget</td><td>Plan vs actual</td></tr>
+      <tr><td><code>/finance-portal/pnl</code></td><td>P&amp;L</td><td>Statement, drill-down</td></tr>
+      <tr><td><code>/finance-portal/revenue</code></td><td>Revenue</td><td>By service, branch, trend</td></tr>
+      <tr><td><code>/finance-portal/tax-vat</code></td><td>Tax / VAT / ZATCA</td><td>Returns, TRN, Zakat, Hijri periods</td></tr>
+      <tr><td><code>/finance-portal/pending</code></td><td>Pending actions</td><td>Approvals queue, overdue AR</td></tr>
+      <tr><td><code>/finance-portal/reports</code></td><td>Reports</td><td>Localised PDF/Excel exports</td></tr>
+      <tr><td><code>/finance-portal/profile</code></td><td>Profile</td><td>Approval authority</td></tr>
+    </tbody></table></div>
+
+    <div class="figlabel"><span class="num">WF 7</span> ZATCA-compliant invoice</div>
+    <div class="wf">
+      <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">salisauto.com/finance-portal/invoices/INV-8801</span></div>
+      <div class="wf-main">
+        <div class="wf-h"><div><div class="wf-title"></div><div class="wf-cap">INV-8801 · Cleared · فاتورة ضريبية</div></div>
+          <div style="display:flex;gap:8px"><div class="wf-btn ghost">Print / PDF</div><div class="wf-btn">Record payment</div></div></div>
+        <div class="wf-row wf-2b">
+          <div class="wf-card">
+            <div class="wf-tr head" style="grid-template-columns:2fr 1fr 1fr 1fr"><div class="wf-line w60"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-line w40"></div></div>
+            <div class="wf-tr" style="grid-template-columns:2fr 1fr 1fr 1fr"><div class="wf-line w80"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-line w40"></div></div>
+            <div class="wf-tr" style="grid-template-columns:2fr 1fr 1fr 1fr"><div class="wf-line w60"></div><div class="wf-line w40"></div><div class="wf-line w40"></div><div class="wf-line w40"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px"><div class="wf-line w40"></div><div class="wf-line w25"></div></div>
+            <div style="display:flex;justify-content:space-between"><div class="wf-cap">VAT 15%</div><div class="wf-line w25"></div></div>
+          </div>
+          <div class="wf-side">
+            <div class="wf-card" style="place-items:center;text-align:center">
+              <div class="wf-badge">ZATCA QR</div>
+              <div style="width:88px;height:88px;border-radius:8px;background:
+                repeating-conic-gradient(var(--ink) 0 25%, transparent 0 50%) 0 0/16px 16px;opacity:.85"></div>
+              <div class="wf-cap">TLV · TRN · Hash</div></div>
+            <div class="wf-card"><div class="wf-badge">Status</div><div class="wf-pill" style="width:80px"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SUPPORT ============ -->
+  <section id="p-support">
+    <div class="eyebrow">Portal 08 · <span class="b blue">CUSTOMER_SUPPORT</span></div>
+    <h2>Customer Support <code>/support-portal</code></h2>
+    <p class="sub">Omnichannel help desk with live chat (WebSocket), call logging, SLA tracking and knowledge base.
+      11 pages.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Actions / scenarios</th></tr></thead><tbody>
+      <tr><td><code>/support-portal</code></td><td>Dashboard</td><td>Queue health, SLA at-risk, CSAT</td></tr>
+      <tr><td><code>/support-portal/tickets</code></td><td>Tickets</td><td>Triage, assign, resolve</td></tr>
+      <tr><td><code>/support-portal/live-chat</code></td><td>Live chat</td><td>Real-time, canned replies</td></tr>
+      <tr><td><code>/support-portal/customer-history</code></td><td>Customer history</td><td>360° view, past jobs</td></tr>
+      <tr><td><code>/support-portal/escalations</code></td><td>Escalations</td><td>Route to manager/tech</td></tr>
+      <tr><td><code>/support-portal/call-log</code></td><td>Call log</td><td>Inbound/outbound, notes</td></tr>
+      <tr><td><code>/support-portal/sla</code></td><td>SLA tracking</td><td>Timers, breach alerts</td></tr>
+      <tr><td><code>/support-portal/kb</code></td><td>Knowledge base</td><td>Articles, search</td></tr>
+      <tr><td><code>/support-portal/ratings</code></td><td>Customer ratings</td><td>CSAT/NPS review</td></tr>
+      <tr><td><code>/support-portal/reports</code></td><td>Reports</td><td>Volume, resolution time</td></tr>
+      <tr><td><code>/support-portal/profile</code></td><td>Profile</td><td>Availability, skills</td></tr>
+    </tbody></table></div>
+
+    <div class="figlabel"><span class="num">WF 8</span> Live chat + ticket context</div>
+    <div class="wf">
+      <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">salisauto.com/support-portal/live-chat</span></div>
+      <div class="wf-main" style="grid-template-columns:1fr;gap:12px">
+        <div class="wf-row wf-2b">
+          <div class="wf-card" style="min-height:180px">
+            <div class="wf-chatL"><div class="wf-line w80" style="width:120px"></div></div>
+            <div class="wf-chatR"><div class="wf-line w60" style="width:90px;background:rgba(255,255,255,.6)"></div></div>
+            <div class="wf-chatL"><div class="wf-line" style="width:150px"></div></div>
+            <div class="wf-input" style="margin-top:auto"></div>
+          </div>
+          <div class="wf-side">
+            <div class="wf-card"><div class="wf-badge">Ticket #4821</div><div class="wf-line w80"></div><div class="wf-pill w" style="width:70px"></div></div>
+            <div class="wf-card"><div class="wf-badge">Customer 360</div><div class="wf-line w60"></div><div class="wf-line w80"></div><div class="wf-line w40"></div></div>
+            <div class="wf-card"><div class="wf-badge">SLA</div><div class="wf-line w40"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HR ============ -->
+  <section id="p-hr">
+    <div class="eyebrow">Portal 09 · <span class="b blue">HR_MANAGER</span></div>
+    <h2>HR Manager <code>/hr-management</code></h2>
+    <p class="sub">Workforce operations — employees, attendance, leave, payroll input, performance and training,
+      with garage-scoped tenant isolation.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Actions / scenarios</th></tr></thead><tbody>
+      <tr><td><code>/hr-management</code></td><td>Dashboard</td><td>Headcount, attendance rate, open leave</td></tr>
+      <tr><td><code>/hr-management/employees</code></td><td>Employees</td><td>Directory, onboard, documents, iqama</td></tr>
+      <tr><td><code>/hr-management/attendance</code></td><td>Attendance</td><td>Clock-in/out, shifts, overtime</td></tr>
+      <tr><td><code>/hr-management/leave</code></td><td>Leave</td><td>Requests, balances, approvals</td></tr>
+      <tr><td><code>/hr-management/payroll</code></td><td>Payroll input</td><td>Hours, allowances → Finance</td></tr>
+      <tr><td><code>/hr-management/performance</code></td><td>Performance</td><td>Reviews, KPIs</td></tr>
+      <tr><td><code>/hr-management/training</code></td><td>Training</td><td>Certifications, skills matrix</td></tr>
+      <tr><td><code>/hr-management/recruitment</code></td><td>Recruitment</td><td>Openings, applicants</td></tr>
+      <tr><td><code>/hr-management/reports</code></td><td>Reports</td><td>Turnover, cost, Saudization</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <!-- ============ CUSTOMER ============ -->
+  <section id="p-customer">
+    <div class="eyebrow">Portal 10 · <span class="b blue">CUSTOMER</span></div>
+    <h2>Customer portal <code>/portal</code></h2>
+    <p class="sub">The self-service surface — book, track, approve, pay, shop parts and find garages. 10 pages,
+      fully mobile/PWA.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Route</th><th>Screen</th><th>Actions / scenarios</th></tr></thead><tbody>
+      <tr><td><code>/portal/dashboard</code></td><td>Dashboard</td><td>Next appointment, active service, dues</td></tr>
+      <tr><td><code>/portal/appointments</code></td><td>Appointments</td><td>Book, reschedule, cancel</td></tr>
+      <tr><td><code>/portal/vehicles</code></td><td>My vehicles</td><td>Add, service history, reminders</td></tr>
+      <tr><td><code>/portal/track-service</code></td><td>Track service</td><td>Live job status, photos</td></tr>
+      <tr><td><code>/portal/quotations</code></td><td>Quotations</td><td>Review, approve/decline line items</td></tr>
+      <tr><td><code>/portal/invoices</code></td><td>Invoices</td><td>View, pay online, download</td></tr>
+      <tr><td><code>/portal/find-garage</code></td><td>Find garage</td><td>Map, filters, availability</td></tr>
+      <tr><td><code>/portal/parts-store</code></td><td>Parts store</td><td>Browse, cart, checkout</td></tr>
+      <tr><td><code>/portal/communications</code></td><td>Communications</td><td>Chat, notifications</td></tr>
+      <tr><td><code>/portal/profile</code></td><td>Profile</td><td>Details, loyalty, addresses</td></tr>
+    </tbody></table></div>
+
+    <div class="figlabel"><span class="num">WF 9</span> Customer — track service (mobile) &amp; quotation approval</div>
+    <div class="grid g2">
+      <div class="wf" style="max-width:340px">
+        <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">…/portal/track-service</span></div>
+        <div class="wf-main">
+          <div class="wf-title sm"></div><div class="wf-cap">Camry · ABC-1234 · In progress</div>
+          <div class="wf-card"><div class="wf-badge">Progress</div>
+            <div style="display:flex;gap:6px;align-items:center"><div class="wf-pill" style="width:16px;height:16px;border-radius:50%"></div><div class="wf-line w80"></div></div>
+            <div style="display:flex;gap:6px;align-items:center"><div class="wf-pill" style="width:16px;height:16px;border-radius:50%"></div><div class="wf-line w60"></div></div>
+            <div style="display:flex;gap:6px;align-items:center"><div class="wf-pill b" style="width:16px;height:16px;border-radius:50%"></div><div class="wf-line"></div></div>
+            <div style="display:flex;gap:6px;align-items:center;opacity:.5"><div class="wf-input" style="width:16px;height:16px;border-radius:50%"></div><div class="wf-line w40"></div></div>
+          </div>
+          <div class="wf-btn" style="width:100%">Message advisor</div>
+        </div>
+      </div>
+      <div class="wf" style="max-width:340px">
+        <div class="wf-bar"><i></i><i></i><i></i><span class="wf-url">…/portal/quotations</span></div>
+        <div class="wf-main">
+          <div class="wf-title sm"></div><div class="wf-cap">Quote Q-556 · Awaiting approval</div>
+          <div class="wf-tbl">
+            <div class="wf-tr" style="grid-template-columns:1fr auto auto"><div class="wf-line w80"></div><div class="wf-line w25"></div><div class="wf-pill" style="width:22px"></div></div>
+            <div class="wf-tr" style="grid-template-columns:1fr auto auto"><div class="wf-line w60"></div><div class="wf-line w25"></div><div class="wf-pill" style="width:22px"></div></div>
+            <div class="wf-tr" style="grid-template-columns:1fr auto auto"><div class="wf-line w80"></div><div class="wf-line w25"></div><div class="wf-input" style="width:22px;height:16px"></div></div>
+          </div>
+          <div class="wf-row wf-2"><div class="wf-btn ghost">Decline</div><div class="wf-btn">Approve SAR 1,240</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ USER FLOWS ============ -->
+  <section id="userflows">
+    <div class="eyebrow">10 · Flows &amp; scenarios</div>
+    <h2>User flows by role</h2>
+    <p class="sub">The primary journey for each role, end to end. Together these cover every operational path
+      through the platform.</p>
+
+    <div class="figlabel"><span class="num">Fig 13</span> Customer — book → track → approve → pay</div>
+    <div class="diagram"><div class="cap">Self-service journey</div>
+<pre class="mermaid">
+graph LR
+  A([Open portal]):::e --> B[Find garage / pick branch]
+  B --> C[Book slot · vehicle · service]
+  C --> D[Confirmation + SMS]
+  D --> E[Drop off · check-in]
+  E --> F[Track service live]
+  F --> G{Quote?}
+  G -- yes --> H[Review &amp; approve line items]
+  H --> F
+  G -- no --> I[Ready notification]
+  F --> I --> J[Pay invoice online]
+  J --> K[Receipt · loyalty points]:::e
+  classDef e fill:#0B1F3B,color:#fff,stroke:#0B1F3B;
+  classDef d fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class B,C,D,E,F,G,H,I,J d;
+</pre></div>
+
+    <div class="grid g2">
+      <div>
+        <div class="figlabel"><span class="num">Fig 14</span> Service Advisor</div>
+        <div class="diagram"><div class="cap">Arrival → invoice</div>
+<pre class="mermaid">
+graph TB
+  A[Arrivals board]:::d --> B[Vehicle check-in + photos]
+  B --> C[Open job card]
+  C --> D[Build estimate]
+  D --> E{Approved?}
+  E -- no --> F[Follow up / revise]:::d
+  F --> D
+  E -- yes --> G[Assign bay + technician]
+  G --> H[Monitor active job]
+  H --> I[QC passed]
+  I --> J[Generate invoice + hand over]:::d
+  classDef d fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class A,B,C,D,E,G,H,I d;
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 15</span> Technician</div>
+        <div class="diagram"><div class="cap">Assigned → QC</div>
+<pre class="mermaid">
+graph TB
+  A[My jobs queue]:::d --> B[Open job · start timer]
+  B --> C[Run OBD / inspect]
+  C --> D{Parts needed?}
+  D -- yes --> E[Request parts]:::d
+  E --> F[Await issue from store]
+  F --> G[Perform work · AR guide]
+  D -- no --> G
+  G --> H[Log labour · photos]
+  H --> I[Submit for QC]:::d
+  classDef d fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class A,B,C,D,E,F,G,H,I d;
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 16</span> Store Keeper &amp; Purchase Agent</div>
+        <div class="diagram"><div class="cap">Request → issue → reorder → PO → receive</div>
+<pre class="mermaid">
+graph TB
+  A[Parts request]:::d --> B{In stock?}
+  B -- yes --> C[Issue · deduct stock]
+  B -- no --> D[Backorder flag]
+  C --> E{Below reorder point?}
+  D --> F
+  E -- yes --> F[Requisition]
+  F --> G[Purchase Agent · RFQ]
+  G --> H[Create PO · approve]
+  H --> I[Supplier fulfils]
+  I --> J[Receive · 3-way match]:::d
+  J --> K[Stock replenished]
+  classDef d fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class A,B,C,D,E,F,G,H,I,J,K d;
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 17</span> Finance</div>
+        <div class="diagram"><div class="cap">Invoice → ZATCA → collect → report</div>
+<pre class="mermaid">
+graph TB
+  A[Job ready to bill]:::d --> B[Generate invoice · VAT 15%]
+  B --> C[Submit to ZATCA]
+  C --> D{Cleared?}
+  D -- no --> E[Correct &amp; resubmit]:::d
+  E --> C
+  D -- yes --> F[Send to customer + QR]
+  F --> G[Collect payment]
+  G --> H[Reconcile]
+  H --> I[Post to P&amp;L · VAT return]:::d
+  classDef d fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class A,B,C,D,F,G,H,I d;
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 18</span> Customer Support</div>
+        <div class="diagram"><div class="cap">Contact → resolve / escalate</div>
+<pre class="mermaid">
+graph TB
+  A[Inbound · chat/call/ticket]:::d --> B[Identify customer 360]
+  B --> C[Triage · categorise]
+  C --> D{Resolvable now?}
+  D -- yes --> E[Resolve · KB reply]
+  D -- no --> F[Escalate · SLA timer]
+  F --> G[Route to manager/tech]
+  G --> H[Follow up]
+  E --> I[Close · CSAT survey]:::d
+  H --> I
+  classDef d fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class A,B,C,D,E,F,G,H,I d;
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 19</span> HR &amp; Platform Admin</div>
+        <div class="diagram"><div class="cap">Workforce &amp; network governance</div>
+<pre class="mermaid">
+graph TB
+  H1[HR: onboard employee]:::d --> H2[Attendance · leave]
+  H2 --> H3[Payroll input → Finance]
+  H3 --> H4[Performance · training]:::d
+  P1[Admin: onboard garage]:::d --> P2[Assign plan · RBAC]
+  P2 --> P3[Monitor health · tickets]
+  P3 --> P4[Billing · marketplace payouts]:::d
+  classDef d fill:#eaf3ff,stroke:#0A5ED7,color:#0B1F3B;
+  class H1,H2,H3,H4,P1,P2,P3,P4 d;
+</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SEQUENCES ============ -->
+  <section id="sequences">
+    <div class="eyebrow">11 · Flows &amp; scenarios</div>
+    <h2>Key scenarios (sequence diagrams)</h2>
+    <p class="sub">Cross-role, cross-system interactions for the platform's highest-value paths — the contracts
+      that front-end, API and integrations must honour.</p>
+
+    <div class="figlabel"><span class="num">Fig 20</span> Login &amp; role-based portal routing</div>
+    <div class="diagram"><div class="cap">Auth → enrich → redirect</div>
+<pre class="mermaid">
+sequenceDiagram
+  actor U as User
+  participant FE as React SPA
+  participant API as Express /api
+  participant DB as PostgreSQL
+  U->>FE: submit credentials
+  FE->>API: POST /api/login
+  API->>DB: verify user + password
+  DB-->>API: user row
+  API->>API: create session · enrich primaryPortal
+  API-->>FE: 200 · user{roles, primaryPortal}
+  FE->>FE: roleNavigationMap → select Layout
+  FE-->>U: redirect to role portal
+</pre></div>
+
+    <div class="figlabel"><span class="num">Fig 21</span> End-to-end service (booking → ZATCA invoice → payment)</div>
+    <div class="diagram"><div class="cap">The platform's spine, across six roles</div>
+<pre class="mermaid">
+sequenceDiagram
+  actor C as Customer
+  participant P as Customer Portal
+  participant SA as Service Advisor
+  participant T as Technician
+  participant SK as Store Keeper
+  participant F as Finance
+  participant Z as ZATCA
+  C->>P: book appointment
+  P->>SA: appointment created
+  SA->>SA: check-in + inspect
+  SA->>C: send estimate
+  C-->>SA: approve
+  SA->>T: assign job (bay/tech)
+  T->>SK: request parts
+  SK-->>T: issue parts (stock -1)
+  T->>SA: submit QC pass
+  SA->>F: ready to bill
+  F->>Z: submit e-invoice
+  Z-->>F: cleared + QR
+  F->>C: invoice + QR
+  C->>F: pay online
+  F-->>C: receipt + loyalty points
+</pre></div>
+
+    <div class="grid g2">
+      <div>
+        <div class="figlabel"><span class="num">Fig 22</span> Automated reorder + PO</div>
+        <div class="diagram"><div class="cap">Forecast → requisition → receive</div>
+<pre class="mermaid">
+sequenceDiagram
+  participant INV as Inventory
+  participant AI as Forecast svc
+  participant PA as Purchase Agent
+  participant S as Supplier
+  participant SK as Store Keeper
+  INV->>AI: stock below reorder pt
+  AI->>AI: predict demand
+  AI->>PA: requisition
+  PA->>S: purchase order
+  S-->>SK: shipment
+  SK->>INV: receive · 3-way match
+  INV-->>INV: replenished
+</pre></div>
+      </div>
+      <div>
+        <div class="figlabel"><span class="num">Fig 23</span> Real-time bay occupancy (WebSocket)</div>
+        <div class="diagram"><div class="cap">Live monitoring with row locking</div>
+<pre class="mermaid">
+sequenceDiagram
+  participant T as Technician
+  participant WS as WS server
+  participant DB as PostgreSQL
+  participant D as Bay dashboard
+  T->>WS: start bay session
+  WS->>DB: lock row · startBaySession
+  DB-->>WS: session ok
+  WS-->>D: broadcast bay busy
+  T->>WS: job progress %
+  WS-->>D: live update
+  T->>WS: end session
+  WS->>DB: release
+  WS-->>D: bay free
+</pre></div>
+      </div>
+    </div>
+
+    <div class="figlabel"><span class="num">Fig 24</span> Support escalation with SLA</div>
+    <div class="diagram"><div class="cap">Ticket → chat → escalation → resolution</div>
+<pre class="mermaid">
+sequenceDiagram
+  actor C as Customer
+  participant CS as Support agent
+  participant SLA as SLA timer
+  participant M as Manager
+  C->>CS: open ticket / live chat
+  CS->>SLA: start timer
+  CS->>CS: attempt resolve (KB)
+  alt resolved
+    CS-->>C: solution
+    CS->>SLA: stop · met
+  else escalate
+    CS->>M: escalate
+    M-->>C: follow-up
+    M->>SLA: stop · resolved
+  end
+  CS->>C: CSAT survey
+</pre></div>
+  </section>
+
+  <!-- ============ EDGE ============ -->
+  <section id="edge">
+    <div class="eyebrow">12 · Flows &amp; scenarios</div>
+    <h2>Edge &amp; error states</h2>
+    <p class="sub">Every screen ships four baseline states plus scenario-specific guards. These are handled by the
+      shared <code>ErrorBoundary</code>, skeleton and empty components.</p>
+    <div class="grid g4">
+      <div class="card"><h4>Loading</h4><p class="sub" style="font-size:13px">Skeletons matched to layout; no
+        spinners on data tables. Optimistic UI on mutations.</p></div>
+      <div class="card"><h4>Empty</h4><p class="sub" style="font-size:13px">Illustration + primary CTA (e.g.
+        "No job cards yet — create one").</p></div>
+      <div class="card"><h4>Error</h4><p class="sub" style="font-size:13px">Boundary catches render/API errors;
+        retry action; never a white screen.</p></div>
+      <div class="card"><h4>Offline</h4><p class="sub" style="font-size:13px">PWA cache serves last data; queued
+        mutations sync on reconnect.</p></div>
+    </div>
+    <div class="tablewrap" style="margin-top:16px"><table>
+      <thead><tr><th>Scenario</th><th>Guard / UX</th></tr></thead><tbody>
+      <tr><td>Permission denied (RBAC)</td><td>403 → "You don't have access", hide nav item, server enforces</td></tr>
+      <tr><td>Concurrent bay start</td><td>Transactional row lock; loser sees "Bay just taken"</td></tr>
+      <tr><td>Out-of-stock at issue</td><td>Backorder path; auto-requisition; advisor notified</td></tr>
+      <tr><td>ZATCA rejection</td><td>Invoice → Rejected; correction workflow with field-level errors</td></tr>
+      <tr><td>Payment failure</td><td>Retry, alternate method, keep invoice unpaid; no partial state</td></tr>
+      <tr><td>Appointment no-show</td><td>Auto-flag after grace; slot released; SMS follow-up</td></tr>
+      <tr><td>Quote declined / partial</td><td>Line-item approve; job scoped to approved items only</td></tr>
+      <tr><td>Session expiry</td><td>Silent refresh or redirect to login preserving return URL</td></tr>
+      <tr><td>Tenant leakage</td><td>garageId enforced on every query; cross-garage 404</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <!-- ============ COVERAGE ============ -->
+  <section id="coverage">
+    <div class="eyebrow">13 · Flows &amp; scenarios</div>
+    <h2>Coverage matrix</h2>
+    <p class="sub">Confirmation that every role participates in each core scenario — the check that "all roles ×
+      all scenarios" are served.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Scenario ↓ / Role →</th><th>Cust</th><th>Advisor</th><th>Tech</th><th>Store</th>
+        <th>Purch</th><th>Finance</th><th>Support</th><th>HR</th><th>Mgr</th><th>Platform</th></tr></thead>
+      <tbody>
+        <tr><td class="rolecell">Book &amp; intake</td><td class="yes">●</td><td class="yes">●</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="partial">◐</td><td class="no">–</td><td class="yes">●</td><td class="no">–</td></tr>
+        <tr><td class="rolecell">Diagnose &amp; estimate</td><td class="partial">◐</td><td class="yes">●</td><td class="yes">●</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="no">–</td></tr>
+        <tr><td class="rolecell">Execute &amp; parts</td><td class="no">–</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td><td class="partial">◐</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="no">–</td></tr>
+        <tr><td class="rolecell">Procure &amp; receive</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="yes">●</td><td class="partial">◐</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="partial">◐</td></tr>
+        <tr><td class="rolecell">QC &amp; deliver</td><td class="partial">◐</td><td class="yes">●</td><td class="yes">●</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="no">–</td></tr>
+        <tr><td class="rolecell">Invoice &amp; ZATCA</td><td class="partial">◐</td><td class="partial">◐</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="partial">◐</td></tr>
+        <tr><td class="rolecell">Collect payment</td><td class="yes">●</td><td class="partial">◐</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="no">–</td></tr>
+        <tr><td class="rolecell">Support &amp; SLA</td><td class="yes">●</td><td class="partial">◐</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">●</td><td class="no">–</td><td class="partial">◐</td><td class="partial">◐</td></tr>
+        <tr><td class="rolecell">Workforce &amp; payroll</td><td class="no">–</td><td class="partial">◐</td><td class="partial">◐</td><td class="partial">◐</td><td class="partial">◐</td><td class="yes">●</td><td class="partial">◐</td><td class="yes">●</td><td class="yes">●</td><td class="partial">◐</td></tr>
+        <tr><td class="rolecell">Analytics &amp; governance</td><td class="no">–</td><td class="partial">◐</td><td class="partial">◐</td><td class="partial">◐</td><td class="partial">◐</td><td class="yes">●</td><td class="partial">◐</td><td class="partial">◐</td><td class="yes">●</td><td class="yes">●</td></tr>
+      </tbody>
+    </table></div>
+    <div class="legend"><span><span class="sw" style="background:var(--good)"></span> primary actor (●)</span>
+      <span><span class="sw" style="background:var(--warn)"></span> participates (◐)</span>
+      <span><span class="sw" style="background:var(--muted)"></span> not involved (–)</span></div>
+
+    <footer>
+      <hr class="soft">
+      <p><b>SALIS AUTO — Design Blueprint.</b> Covers 10 portals · 24 roles · 235+ routes · 175+ modules ·
+      320+ tables · 27 diagrams &amp; 9 wireframes. Brand system: Navy #0B1F3B · gradient #0A5ED7→#0BB3FF ·
+      orange #F97316 (warnings only). Rendered from
+      <code>docs/design/salis-auto-design-blueprint.html</code>.</p>
+    </footer>
+  </section>
+</main>
+</div>
+
+<script>
+  // Scroll-spy for the section index
+  (function(){
+    var links=[].slice.call(document.querySelectorAll('.rail a'));
+    var map={};links.forEach(function(a){var id=a.getAttribute('href').slice(1);map[id]=a;});
+    var obs=new IntersectionObserver(function(es){
+      es.forEach(function(e){if(e.isIntersecting){
+        links.forEach(function(a){a.classList.remove('on');});
+        var a=map[e.target.id];if(a)a.classList.add('on');
+      }});
+    },{rootMargin:'-10% 0px -80% 0px'});
+    document.querySelectorAll('section[id],header[id]').forEach(function(s){obs.observe(s);});
+  })();
+</script>
