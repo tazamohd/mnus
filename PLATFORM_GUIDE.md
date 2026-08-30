@@ -137,6 +137,7 @@ Stripe, PayPal, Twilio, and OpenAI keys are only needed if you want to try payme
 
 | Document | What it covers |
 |----------|----------------|
+| [video-series/README.md](./video-series/README.md) | 10-part short video series — production-ready scripts explaining the platform and demo access |
 | [README.md](./README.md) | Full feature list, architecture, and deployment |
 | [replit.md](./replit.md) | System architecture, portal routing, and key files |
 | [PLATFORM_AUDIT_REPORT.md](./PLATFORM_AUDIT_REPORT.md) | Platform audit findings |

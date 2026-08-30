@@ -51,6 +51,8 @@ Complete compliance and localization package for the Saudi market:
 
 New to SALIS AUTO? Start with the **[Platform Guide & Free Demo Access →](./PLATFORM_GUIDE.md)** — it explains what the platform does, how each role-based portal works, and includes **9 free demo users** (one per portal) so you can explore the whole system without creating an account.
 
+Prefer video? The **[Explore the Platform video series →](./video-series/README.md)** is a 10-episode set of short-video scripts (60–90s each) covering the platform, every portal, and demo login — ready to record or feed into an AI video tool.
+
 ---
 
 ## 📚 Documentation
