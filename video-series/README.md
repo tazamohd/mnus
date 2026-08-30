@@ -21,6 +21,8 @@ Each episode has a **production-ready script**: timed narration, a shot-by-shot 
 | 9 | [The Admin Dashboard](./09-admin-dashboard.md) | 90s | `admin@salisauto.com` |
 | 10 | [Platform Admin — Multi-Tenant Control](./10-platform-admin.md) | 75s | `superadmin@salisauto.com` |
 
+🎞️ **Episode 1 is already rendered** — see [`renders/episode-01-welcome.mp4`](./renders/) (60s, 1080p motion graphics with captions and music; generator source included for tweaks and re-renders).
+
 **Narrative arc:** Episodes 1–2 introduce the platform and demo access. Episodes 3–9 follow **one repair job** through the system — the same booking made by the customer in Episode 3 is picked up by the advisor in Episode 4, executed in 5, supplied with parts in 6, invoiced in 7, supported in 8, and overseen in 9. Episode 10 zooms out to the multi-tenant view.
 
 ---
