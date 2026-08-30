@@ -9,14 +9,29 @@ Finished video files for the series, plus the generator used to produce them.
 
 Episodes 0 and 1 need no app footage, so they are produced entirely as motion graphics. Episodes 2–11 are written around real screen recordings of the running app — record those per their scripts (each script includes both English and Arabic narration).
 
-## Adding a voiceover
+## Voiceover
 
-The rendered file carries the narration as captions plus a quiet music bed. To add voice, record (or TTS-generate) the narration column from the script and mix it over this file:
+**All three rendered videos carry a full spoken voiceover** (neural TTS, mixed over the quiet music bed, with the captions kept on screen):
+
+- English episodes: `en-US-AndrewNeural` (warm male narrator).
+- Arabic episode 0: `ar-SA-HamedNeural` (Saudi male voice, MSA read).
+
+The pipeline lives in `ep00-generator/voiceover.py`: it synthesizes each narration line with edge-tts, measures it against its time slot, re-synthesizes slightly faster only when a line runs long (capped so it never sounds rushed — the Arabic spoken lines are lightly condensed from the on-screen captions for timing, a standard dubbing practice), then mixes the lines at their script timestamps over the pad at 30% volume and remuxes into the video without re-encoding.
+
+To change the voice, edit the `voice` field per episode (any edge-tts voice id works — e.g. `ar-SA-ZariyahNeural` for a female Arabic narrator, or a Saudi-dialect read for Episode 11) and rerun:
+
+```bash
+pip install edge-tts imageio-ffmpeg
+python3 voiceover.py            # all episodes
+python3 voiceover.py ep00-ar    # one episode
+```
+
+To replace the TTS with a human recording, record the narration column from the script and mix it the same way:
 
 ```bash
 ffmpeg -i episode-01-welcome.mp4 -i voiceover.wav \
-  -filter_complex "[0:a]volume=0.35[bg];[bg][1:a]amix=inputs=2:duration=first[a]" \
-  -map 0:v -map "[a]" -c:v copy -c:a aac episode-01-voiced.mp4
+  -filter_complex "[0:a]volume=0.30[bg];[bg][1:a]amix=inputs=2:duration=first:normalize=0[a]" \
+  -map 0:v -map "[a]" -c:v copy -c:a aac episode-01-human.mp4
 ```
 
 ## Regenerating / tweaking (`ep00-generator/`, `ep01-generator/`)
