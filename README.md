@@ -47,9 +47,16 @@ Complete compliance and localization package for the Saudi market:
 
 ---
 
+## 🎮 Try the Free Demo
+
+New to SALIS AUTO? Start with the **[Platform Guide & Free Demo Access →](./PLATFORM_GUIDE.md)** — it explains what the platform does, how each role-based portal works, and includes **9 free demo users** (one per portal) so you can explore the whole system without creating an account.
+
+---
+
 ## 📚 Documentation
 
 ### Core Documentation
+- **[PLATFORM_GUIDE.md](./PLATFORM_GUIDE.md)** - Platform guide, usage walkthrough, and free demo users
 - **[PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)** - Comprehensive project documentation
 - **[SALIS_AUTO_DOCUMENTATION.md](./SALIS_AUTO_DOCUMENTATION.md)** - System documentation
 - **[SALIS_AUTO_COMPLETE_APPLICATION_DESCRIPTION.md](./SALIS_AUTO_COMPLETE_APPLICATION_DESCRIPTION.md)** - Complete application description
