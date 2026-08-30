@@ -25,3 +25,18 @@ Viewers learn that there are 9 free demo accounts — one per portal — and see
 
 ## Production note
 The credentials table graphic should match `PLATFORM_GUIDE.md` §3 exactly. Keep it on screen ≥6 seconds so viewers can screenshot it.
+
+## Story beat
+Before the story continues, the viewer gets the keys to the garage: nine free accounts, nine seats — including the one Amal sits in next episode.
+
+## التعليق الصوتي — Arabic narration (فصحى)
+| Time | النص العربي |
+|------|-------------|
+| 0:00 | لست بحاجة إلى التسجيل لتستكشف «سالس أوتو» — النسخة التجريبية تأتي مع تسعة حسابات مجانية، حساب لكل دور في الورشة. |
+| 0:08 | ها هي أمامك. كل حساب بكلمة مرور بسيطة: اسم الدور متبوعاً بـ«123». صوّر الجدول، أو ستجده في دليل المنصة داخل المستودع. |
+| 0:20 | لنسجّل الدخول كعميل. افتح التطبيق وستصل إلى صفحة تسجيل الدخول. |
+| 0:26 | أدخل البريد التجريبي client@salisauto.com وكلمة المرور client123. |
+| 0:36 | اضغط «تسجيل الدخول» ولاحظ ما يحدث: المنصة تقرأ دور الحساب وتوجهك مباشرة إلى بوابتك الصحيحة — دون حفظ أي روابط. |
+| 0:46 | ولأن هذا حساب عميل، وصلنا إلى بوابة العملاء، والبيانات التجريبية جاهزة أمامنا. |
+| 0:53 | ولتجربة دور آخر، سجّل الخروج وادخل بحساب آخر من الجدول — المالية، الفني، الدعم — كلٌّ يصل إلى بوابته. |
+| 1:05 | هذا كل شيء. في الحلقة القادمة نبقى بحساب العميل ونحجز موعد صيانة حقيقياً. أراكم هناك. |

@@ -4,9 +4,10 @@ Finished video files for the series, plus the generator used to produce them.
 
 ## Files
 
+- **`episode-00-story-en.mp4`** / **`episode-00-story-ar.mp4`** — Episode 0 "The Story of SALIS AUTO / قصة سالس أوتو" in **English and Arabic**: 75s, 1920×1080, 30fps, H.264 + AAC. The storytelling intro from the [Episode 0 script](../00-the-story.md): Riyadh dawn skyline, Abu Khalid's chaos montage (whiteboard, paper job cards, WhatsApp bookings, spreadsheet, ringing phone), the three pain cards, the chaos collapsing into one clean system, the Saudi compliance badges (VAT ١٥٪ / ZATCA فاتورة / Hijri / Arabic-first), the logo reveal, and the "Follow Amal's Camry" series roadmap. The Arabic cut has fully RTL captions and Arabic overlays (Noto Sans Arabic).
 - **`episode-01-welcome.mp4`** — Episode 1 "Welcome to SALIS AUTO", fully rendered: 60s, 1920×1080, 30fps, H.264 + AAC (subtle ambient pad). Motion-graphics production of the [Episode 1 script](../01-welcome-to-salis-auto.md) — animated logo intro, stylized UI mockups (login, dashboard, workshop calendar, ZATCA invoice), the 18-group sidebar scroll, customer-vs-advisor split screen, compliance zoom, and end card, with the narration as on-screen captions.
 
-Episode 1 needs no app footage, so it could be produced entirely as motion graphics. Episodes 2–10 are written around real screen recordings of the running app — record those per their scripts.
+Episodes 0 and 1 need no app footage, so they are produced entirely as motion graphics. Episodes 2–11 are written around real screen recordings of the running app — record those per their scripts (each script includes both English and Arabic narration).
 
 ## Adding a voiceover
 
@@ -18,15 +19,17 @@ ffmpeg -i episode-01-welcome.mp4 -i voiceover.wav \
   -map 0:v -map "[a]" -c:v copy -c:a aac episode-01-voiced.mp4
 ```
 
-## Regenerating / tweaking (`ep01-generator/`)
+## Regenerating / tweaking (`ep00-generator/`, `ep01-generator/`)
 
-The video is fully code-generated and deterministic — edit and re-render:
+The videos are fully code-generated and deterministic — edit and re-render:
 
 | File | Role |
 |------|------|
-| `render.html` | The animation: a canvas `renderFrame(t)` that draws the full 60s timeline (scenes, captions, easing) |
-| `capture.mjs` | Renders frames through headless Chromium (Playwright) — 1800 JPEG frames at 30fps |
-| `gen_audio.py` | Synthesizes the ambient chord-pad WAV (pure Python, no dependencies) |
+| `render.html` / `render-ep00.html` | The animation: a canvas `renderFrame(t)` that draws the full timeline (scenes, captions, easing). Ep00 takes `?lang=en` or `?lang=ar` — all strings, caption direction, and fonts switch per language |
+| `capture.mjs` / `capture00.mjs` | Renders frames through headless Chromium (Playwright) — JPEG frames at 30fps (`LANG_VIDEO=ar` for the Arabic cut of ep00) |
+| `gen_audio.py` / `gen_audio75.py` | Synthesizes the ambient chord-pad WAV (pure Python, no dependencies) |
+
+The Arabic cut needs an Arabic-capable font installed for Chromium (the renders use **Noto Sans Arabic**; on Linux, drop the TTF in `/usr/share/fonts` and run `fc-cache -f`).
 
 ```bash
 npm install playwright-core        # needs a Chromium binary available
