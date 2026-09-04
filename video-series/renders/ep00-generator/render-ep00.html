@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;background:#000;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+const W = 1920, H = 1080;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+const LANG = (new URLSearchParams(location.search).get('lang')) || 'en';
+const AR = LANG === 'ar';
+
+// ---------- palette ----------
+const NAVY='#0B1F3B', NAVY_D='#071427';
+const BLUE1='#0A5ED7', BLUE2='#0BB3FF';
+const WHITE='#FFFFFF', GRAY='#8FA3BF';
+const GREEN='#16A34A', ORANGE='#F97316', AMBER='#FBBF24';
+const LATIN='"DejaVu Sans", Arial, Helvetica, sans-serif';
+const ARABIC='"Noto Sans Arabic", "DejaVu Sans", sans-serif';
+const FONT = AR ? ARABIC : LATIN;
+
+// ---------- helpers ----------
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+function ease(t,t0,t1){ const x=clamp((t-t0)/(t1-t0),0,1); return x*x*(3-2*x); }
+function easeOutBack(x){ const c1=1.20158,c3=c1+1; return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2); }
+function inOut(t,a,b,c,d){ return ease(t,a,b)*(1-ease(t,c,d)); }
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function text(s,x,y,size,color,weight,align,spacing,font){
+  ctx.save();
+  ctx.fillStyle=color; ctx.textAlign=align||'left'; ctx.textBaseline='alphabetic';
+  ctx.font=(weight||'400')+' '+size+'px '+(font||FONT);
+  if(spacing && !AR){ ctx.letterSpacing=spacing+'px'; }
+  ctx.fillText(s,x,y);
+  ctx.restore();
+}
+function wrap(s,maxW,size,weight,font){
+  ctx.font=(weight||'400')+' '+size+'px '+(font||FONT);
+  const words=s.split(' '); const lines=[]; let line='';
+  for(const w of words){
+    const test=line?line+' '+w:w;
+    if(ctx.measureText(test).width>maxW && line){ lines.push(line); line=w; } else line=test;
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+function blueGrad(x0,y0,x1,y1){
+  const g=ctx.createLinearGradient(x0,y0,x1,y1);
+  g.addColorStop(0,BLUE1); g.addColorStop(1,BLUE2); return g;
+}
+function prand(i){ const x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+
+// ---------- strings ----------
+const S = AR ? {
+  chip1:'الحلقة ٠  •  قصة سالس أوتو',
+  time:'٦:٣٠ صباحاً — الرياض',
+  pain1:'أين سيارتي؟', pain2:'قطعة مفقودة', pain3:'فاتورة منسية',
+  chipPain:'كل يوم… تضيع ساعات',
+  chipOne:'نظام واحد. كل شيء.',
+  chipKSA:'صُنعت للسوق السعودي',
+  wa1:'السلام عليكم، أبغى موعد بكرة', wa2:'متى تجهز سيارتي؟', wa3:'كم صار الحساب؟',
+  wb:'سبورة الملاحظات', pp:'بطاقات ورقية', xls:'مخزون بالإكسل', wapp:'حجوزات واتساب',
+  vat:'ضريبة ١٥٪', hijri:'١٤٤٧ هـ', arabic:'ع  عربي أولاً', zatca:'زاتكا',
+  follow:'تابعوا كامري أمل', follow2:'من الحجز إلى الدفع — عبر كل بوابات المنصة',
+  next:'التالي  ◂  الحلقة ١ : أهلاً بكم في سالس أوتو',
+  sub:'منصة ERP لورش السيارات',
+  caps:[
+    [0.6,1.6,6.8,7.8,'السادسة والنصف صباحاً في الرياض. أبو خالد يفتح ورشته، كما كان يفعل والده من قبله.'],
+    [8.2,9.0,18.8,19.6,'ويبدأ اليوم كما يبدأ دائماً: سبورة مليئة بالملاحظات، بطاقات ورقية، حجوزات على الواتساب، مخزون في جداول — وهاتف لا يتوقف عن الرنين.'],
+    [20.2,21.0,28.8,29.6,'عميلة تسأل: أين سيارتي؟ ولا أحد يملك الجواب. قطعة تختفي. فاتورة تُنسى. وكل يوم تضيع ساعات ثمينة وسط الفوضى.'],
+    [30.4,31.2,40.8,41.6,'فسألنا سؤالاً واحداً بسيطاً: ماذا لو اجتمعت الورشة كلها في نظام واحد؟ شاشة واحدة لكل حجز، وكل عمل، وكل قطعة، وكل ريال.'],
+    [42.2,43.0,50.8,51.6,'وماذا لو كان يتحدث لغتنا ويتبع أنظمتنا؟ ضريبة ١٥٪. فوترة «فاتورة» من زاتكا. التاريخ الهجري. والعربية أولاً، لا مجرد ترجمة.'],
+    [52.2,53.0,60.8,61.6,'ذلك السؤال أصبح «سالس أوتو» — ليس برنامجاً مستورداً، بل منصة بُنيت لورشٍ مثل ورشنا.'],
+    [62.2,63.0,71.8,73.0,'في هذه السلسلة نتابع سيارة واحدة — كامري أمل — من الحجز إلى الدفع، عبر كل ركن من المنصة. هذه قصة ورشتك… بلا فوضى. لنبدأ.'],
+  ],
+} : {
+  chip1:'EPISODE 0  •  THE STORY OF SALIS AUTO',
+  time:'6:30 AM — RIYADH',
+  pain1:'Where is my car?', pain2:'A missing part', pain3:'A forgotten invoice',
+  chipPain:'Every day, hours disappear',
+  chipOne:'One system. Everything.',
+  chipKSA:'Built for Saudi Arabia',
+  wa1:'Salam! Can I book for tomorrow?', wa2:'When is my car ready??', wa3:'How much is it now?',
+  wb:'Whiteboard notes', pp:'Paper job cards', xls:'Spreadsheet inventory', wapp:'WhatsApp bookings',
+  vat:'VAT 15%', hijri:'HIJRI 1447', arabic:'ع  ARABIC FIRST', zatca:'ZATCA',
+  follow:"Follow Amal's Camry", follow2:'From booking to payment — through every portal',
+  next:'NEXT  ▸  EPISODE 1 : WELCOME TO SALIS AUTO',
+  sub:'AUTOMOTIVE ERP PLATFORM',
+  caps:[
+    [0.6,1.6,6.8,7.8,'Six-thirty in the morning, Riyadh. Abu Khalid opens his garage — the same way his father did before him.'],
+    [8.2,9.0,18.8,19.6,'And the day begins the way it always does: a whiteboard full of notes, job cards on paper, bookings on WhatsApp, inventory in a spreadsheet — and a phone that never stops ringing.'],
+    [20.2,21.0,28.8,29.6,'A customer asks where her car is — nobody knows. A part goes missing. An invoice is forgotten. Every single day, hours disappear into the chaos.'],
+    [30.4,31.2,40.8,41.6,'So we asked one simple question: what if the whole garage lived in one system? One screen for every booking, every job, every part, every riyal.'],
+    [42.2,43.0,50.8,51.6,'And what if it spoke our language and followed our rules? Fifteen percent VAT. ZATCA e-invoicing. Hijri dates. Arabic — first, not as an afterthought.'],
+    [52.2,53.0,60.8,61.6,'That question became SALIS AUTO — not software imported from somewhere else, but a platform built for garages like ours.'],
+    [62.2,63.0,71.8,73.0,"In this series, we follow one car — Amal's Camry — from booking to payment, through every corner of the platform. This is the story of your garage… without the chaos. Let's begin."],
+  ],
+};
+
+// ---------- background ----------
+function drawBG(t,warm){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  if(warm>0){
+    // dawn: warm horizon blended over navy
+    g.addColorStop(0,NAVY);
+    g.addColorStop(0.55,'#12294d');
+    g.addColorStop(1,'#3a2c33');
+  } else { g.addColorStop(0,NAVY); g.addColorStop(1,NAVY_D); }
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  const gx=W*0.5+Math.sin(t*0.15)*W*0.25, gy=H*0.35+Math.cos(t*0.11)*H*0.12;
+  const rg=ctx.createRadialGradient(gx,gy,0,gx,gy,900);
+  rg.addColorStop(0,'rgba(10,94,215,0.14)'); rg.addColorStop(1,'rgba(10,94,215,0)');
+  ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.globalAlpha=0.05; ctx.strokeStyle='#5B8DD9'; ctx.lineWidth=1;
+  const off=(t*8)%80;
+  for(let x=-80+off;x<W+80;x+=80){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x-140,H); ctx.stroke(); }
+  ctx.restore();
+}
+
+// ---------- caption (RTL-aware lower third) ----------
+function drawCaption(t){
+  for(const [a,b,c,d,s] of S.caps){
+    const al=inOut(t,a,b,c,d); if(al<=0) continue;
+    const size=AR?36:34, lh=AR?54:46;
+    const lines=wrap(s,1400,size,AR?'600':'500');
+    const pad=26, w=1520, h=lines.length*lh+pad*2-8;
+    const x=(W-w)/2, y=H-90-h+(1-al)*20;
+    ctx.save(); ctx.globalAlpha=al;
+    ctx.fillStyle='rgba(4,12,26,0.78)'; rr(x,y,w,h,14); ctx.fill();
+    ctx.fillStyle=blueGrad(x,y,x,y+h);
+    if(AR){ rr(x+w-8,y,8,h,4); } else { rr(x,y,8,h,4); }
+    ctx.fill();
+    ctx.save(); if(AR) ctx.direction='rtl';
+    lines.forEach((ln,i)=>{
+      if(AR) text(ln,x+w-40,y+pad+30+i*lh,size,'#E8EFFA','600','right');
+      else   text(ln,x+40,y+pad+26+i*lh,size,'#E8EFFA','500','left');
+    });
+    ctx.restore(); ctx.restore();
+  }
+}
+
+// ---------- chip ----------
+function chip(t,a,b,c,d,label,y){
+  const al=inOut(t,a,b,c,d); if(al<=0) return;
+  ctx.save(); ctx.globalAlpha=al;
+  ctx.font='600 '+(AR?32:30)+'px '+FONT;
+  const w=ctx.measureText(label).width+70;
+  const x=(W-w)/2, yy=(y||70)+(1-al)*-14;
+  ctx.fillStyle='rgba(10,94,215,0.22)'; rr(x,yy,w,58,29); ctx.fill();
+  ctx.strokeStyle='rgba(11,179,255,0.55)'; ctx.lineWidth=2; rr(x,yy,w,58,29); ctx.stroke();
+  text(label,x+w/2,yy+(AR?41:39),AR?32:30,'#BFE4FF','600','center');
+  ctx.restore();
+}
+
+// ---------- car & logo ----------
+function drawCar(x,y,s,color){
+  ctx.save(); ctx.translate(x,y); ctx.scale(s/200,s/200); ctx.fillStyle=color;
+  rr(-100,-14,200,34,16); ctx.fill();
+  rr(-58,-46,104,44,18); ctx.fill();
+  ctx.fillStyle=NAVY;
+  rr(-44,-38,34,28,8); ctx.fill(); rr(2,-38,34,28,8); ctx.fill();
+  ctx.fillStyle=color;
+  ctx.beginPath(); ctx.arc(-55,26,18,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(55,26,18,0,7); ctx.fill();
+  ctx.fillStyle=NAVY;
+  ctx.beginPath(); ctx.arc(-55,26,8,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(55,26,8,0,7); ctx.fill();
+  ctx.restore();
+}
+
+// ---------- Scene 1 : Riyadh dawn (0-8) ----------
+function skyline(baseY,color){
+  ctx.fillStyle=color;
+  // generic towers
+  const bl=[[60,300,140],[230,420,110],[370,240,90],[1180,380,120],[1330,300,100],[1620,430,130],[1780,260,90]];
+  for(const [x,h,w] of bl){ ctx.fillRect(x,baseY-h,w,h); }
+  // Kingdom-tower-like silhouette (tower with an arch opening near the top)
+  ctx.beginPath();
+  ctx.moveTo(760,baseY);
+  ctx.lineTo(790,baseY-520);
+  ctx.quadraticCurveTo(870,baseY-640,950,baseY-520);
+  ctx.lineTo(980,baseY);
+  ctx.closePath(); ctx.fill();
+  // arch opening (filled with a sky tone so it reads as a see-through arch)
+  ctx.save(); ctx.fillStyle='#17305b';
+  ctx.beginPath();
+  ctx.moveTo(830,baseY-470);
+  ctx.quadraticCurveTo(870,baseY-560,910,baseY-470);
+  ctx.lineTo(902,baseY-380);
+  ctx.quadraticCurveTo(870,baseY-410,838,baseY-380);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  // slender tower
+  ctx.beginPath();
+  ctx.moveTo(1070,baseY); ctx.lineTo(1085,baseY-460); ctx.lineTo(1100,baseY-500);
+  ctx.lineTo(1115,baseY-460); ctx.lineTo(1130,baseY); ctx.closePath(); ctx.fill();
+}
+function scene1(t){
+  const a=inOut(t,0.0,1.0,6.8,8.0); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  const baseY=H-260;
+  // rising sun
+  const sy=lerp(baseY+80,baseY-330,ease(t,0.3,6.5));
+  const sg=ctx.createRadialGradient(W/2,sy,0,W/2,sy,420);
+  sg.addColorStop(0,'rgba(251,191,36,0.85)'); sg.addColorStop(0.25,'rgba(249,115,22,0.35)'); sg.addColorStop(1,'rgba(249,115,22,0)');
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(W/2,sy,420,0,7); ctx.fill();
+  ctx.fillStyle=AMBER; ctx.beginPath(); ctx.arc(W/2,sy,64,0,7); ctx.fill();
+  // skyline + ground
+  skyline(baseY,'#050D1C');
+  ctx.fillStyle='#050D1C'; ctx.fillRect(0,baseY,W,H-baseY);
+  // time overlay
+  const a2=ease(t,1.2,2.2);
+  ctx.globalAlpha=a*a2;
+  ctx.font='700 44px '+FONT;
+  const tw=ctx.measureText(S.time).width+80;
+  ctx.fillStyle='rgba(4,12,26,0.7)'; rr((W-tw)/2,150,tw,76,38); ctx.fill();
+  text(S.time,W/2,150+52,44,'#FFE9C4','700','center',AR?0:4);
+  ctx.restore();
+  chip(t,0.6,1.4,6.6,7.6,S.chip1);
+}
+
+// ---------- Scene 2 : chaos montage (8-20) ----------
+function noteCard(x,y,w,h,rot,color){
+  ctx.save(); ctx.translate(x+w/2,y+h/2); ctx.rotate(rot); ctx.translate(-w/2,-h/2);
+  ctx.shadowColor='rgba(0,0,0,0.4)'; ctx.shadowBlur=24; ctx.shadowOffsetY=10;
+  ctx.fillStyle=color; rr(0,0,w,h,12); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+function chaosItem(t,t0,draw){
+  const e=ease(t,t0,t0+0.7); if(e<=0) return;
+  ctx.save(); ctx.globalAlpha=e;
+  const dy=(1-easeOutBack(e))*-160;
+  ctx.translate(0,dy);
+  draw();
+  ctx.restore();
+}
+function drawChaos(t,collapse){
+  // collapse: 0 = full chaos, 1 = sucked into center
+  const cx=W/2, cy=H/2-60;
+  const items=[
+    // whiteboard with sticky notes
+    [8.4, ()=>{ const x=170,y=200;
+      noteCard(x,y,460,330,-0.03,'#E8EDF4');
+      const cols=['#FDE68A','#FCA5A5','#A7F3D0','#93C5FD','#FDBA74','#FDE68A'];
+      for(let i=0;i<6;i++){ const nx=x+34+(i%3)*140, ny=y+40+Math.floor(i/3)*130;
+        ctx.save(); ctx.translate(nx+50,ny+50); ctx.rotate((prand(i)-0.5)*0.2);
+        ctx.fillStyle=cols[i]; ctx.fillRect(-50,-50,100,100);
+        ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=2;
+        for(let l=0;l<3;l++){ ctx.beginPath(); ctx.moveTo(-34,-20+l*22); ctx.lineTo(34,-20+l*22); ctx.stroke(); }
+        ctx.restore(); }
+      text(S.wb,x+230,y+368,26,GRAY,'600','center'); }],
+    // paper job card stack
+    [10.0, ()=>{ const x=700,y=500;
+      for(let i=4;i>=0;i--){ noteCard(x-i*10,y-i*14,340,220,(prand(i+5)-0.5)*0.12,i?'#C7D2E0':'#F1F5FA'); }
+      ctx.strokeStyle='rgba(11,31,59,0.4)'; ctx.lineWidth=3;
+      for(let l=0;l<4;l++){ ctx.beginPath(); ctx.moveTo(x+40,y+50+l*40); ctx.lineTo(x+300,y+50+l*40); ctx.stroke(); }
+      text(S.pp,x+170,y+258,26,GRAY,'600','center'); }],
+    // whatsapp bubbles
+    [11.6, ()=>{ const x=1330,y=180;
+      const msgs=[S.wa1,S.wa2,S.wa3];
+      msgs.forEach((m,i)=>{ ctx.font='500 26px '+FONT;
+        const bw=ctx.measureText(m).width+56, by=y+i*96;
+        ctx.save(); ctx.shadowColor='rgba(0,0,0,0.35)'; ctx.shadowBlur=16;
+        ctx.fillStyle=i%2?'#128C4B':'#1E3A5F';
+        const bx=i%2? x : x+40;
+        rr(bx,by,bw,64,20); ctx.fill(); ctx.shadowBlur=0;
+        text(m,bx+bw/2,by+42,26,'#EAF6EE','500','center');
+        ctx.restore(); });
+      text(S.wapp,x+180,y+318,26,GRAY,'600','center'); }],
+    // spreadsheet
+    [13.2, ()=>{ const x=1240,y=460;
+      noteCard(x,y,480,300,0.02,'#F1F5FA');
+      ctx.strokeStyle='#9FB2C8'; ctx.lineWidth=2;
+      for(let r=0;r<=6;r++){ ctx.beginPath(); ctx.moveTo(x+20,y+30+r*40); ctx.lineTo(x+460,y+30+r*40); ctx.stroke(); }
+      for(let c=0;c<=5;c++){ ctx.beginPath(); ctx.moveTo(x+20+c*88,y+30); ctx.lineTo(x+20+c*88,y+270); ctx.stroke(); }
+      ctx.fillStyle='#B4C2D4';
+      for(let i=0;i<10;i++){ ctx.fillRect(x+30+(i%5)*88, y+40+Math.floor(i/5)*80, 60, 18); }
+      ctx.fillStyle='#DC2626'; ctx.fillRect(x+30+2*88,y+40+40,60,18);   // one angry red cell
+      text(S.xls,x+240,y+338,26,GRAY,'600','center'); }],
+    // ringing phone
+    [14.8, ()=>{ const x=960,y=300;
+      const sh=Math.sin(t*26)*((collapse>0)?0:8);
+      ctx.save(); ctx.translate(x+sh,y);
+      ctx.fillStyle='#0A1E3C'; rr(-70,-120,140,240,30); ctx.fill();
+      ctx.strokeStyle='rgba(143,163,191,0.5)'; ctx.lineWidth=3; rr(-70,-120,140,240,30); ctx.stroke();
+      ctx.fillStyle=GREEN; ctx.beginPath(); ctx.arc(0,40,34,0,7); ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=5;
+      ctx.beginPath(); ctx.arc(0,40,14,0.6,2.6); ctx.stroke();
+      // ring waves
+      for(let i=1;i<=2;i++){ ctx.strokeStyle='rgba(251,191,36,'+(0.7-i*0.25)+')'; ctx.lineWidth=4;
+        ctx.beginPath(); ctx.arc(0,-130,26+i*20+Math.sin(t*8)*6,-2.4,-0.7); ctx.stroke(); }
+      ctx.restore(); }],
+  ];
+  ctx.save();
+  if(collapse>0){
+    // pull everything toward center & shrink
+    const k=1-0.92*collapse;
+    ctx.translate(cx,cy); ctx.scale(k,k);
+    ctx.rotate(collapse*0.6);
+    ctx.translate(-cx,-cy);
+    ctx.globalAlpha=1-collapse;
+  }
+  for(const [t0,draw] of items) chaosItem(t,t0,draw);
+  ctx.restore();
+}
+function scene2(t){
+  const a=inOut(t,8.0,8.8,29.2,30.4); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  const collapse=ease(t,30.4,32.2);   // handled visually in scene4 window too
+  drawChaos(t,collapse);
+  ctx.restore();
+  // pain cards (20-30) on top, dimmed bg
+  const p=inOut(t,20.0,20.8,29.0,30.2);
+  if(p>0){
+    ctx.save(); ctx.globalAlpha=p*0.55; ctx.fillStyle='#04101F'; ctx.fillRect(0,0,W,H); ctx.restore();
+    const cards=[[S.pain1,20.4,'#F97316','call'],[S.pain2,21.4,'#DC2626','part'],[S.pain3,22.4,'#FBBF24','inv']];
+    cards.forEach((c,i)=>{
+      const e=ease(t,c[1],c[1]+0.7); if(e<=0) return;
+      ctx.save(); ctx.globalAlpha=p*e;
+      const cw=470, chh=300, x=(W-3*cw-2*60)/2+i*(cw+60), y=H/2-230+(1-easeOutBack(e))*80;
+      ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=30;
+      ctx.fillStyle='#0E2748'; rr(x,y,cw,chh,20); ctx.fill(); ctx.shadowBlur=0;
+      ctx.strokeStyle=c[2]+'88'; ctx.lineWidth=3; rr(x,y,cw,chh,20); ctx.stroke();
+      ctx.fillStyle=c[2]+'26'; ctx.beginPath(); ctx.arc(x+cw/2,y+108,64,0,7); ctx.fill();
+      ctx.strokeStyle=c[2]; ctx.lineWidth=7; ctx.lineCap='round';
+      if(c[3]==='call'){ // phone handset
+        ctx.beginPath(); ctx.arc(x+cw/2,y+108,30,0.7,2.5); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x+cw/2,y+108,30,3.8,5.6); ctx.stroke();
+      } else if(c[3]==='part'){ // empty box
+        ctx.strokeRect(x+cw/2-32,y+84,64,52);
+        ctx.beginPath(); ctx.moveTo(x+cw/2-32,y+96); ctx.lineTo(x+cw/2+32,y+96); ctx.stroke();
+        ctx.font='800 44px '+LATIN; ctx.fillStyle=c[2]; ctx.textAlign='center';
+        ctx.fillText('?',x+cw/2,y+180);
+      } else { // torn invoice
+        ctx.strokeRect(x+cw/2-28,y+72,56,72);
+        ctx.beginPath(); ctx.moveTo(x+cw/2-28,y+120);
+        for(let z=0;z<5;z++) ctx.lineTo(x+cw/2-28+11+z*11, y+120+((z%2)?-8:8));
+        ctx.stroke();
+      }
+      text(c[0],x+cw/2,y+238,32,'#F1F6FD','700','center');
+      ctx.restore();
+    });
+    chip(t,23.4,24.2,28.8,29.8,S.chipPain);
+  }
+}
+
+// ---------- Scene 4 : the turn (30-42) ----------
+function mockDashboard(x,y,w,h){
+  ctx.fillStyle='#0E2748'; rr(x,y,w,h,16); ctx.fill();
+  ctx.strokeStyle='rgba(143,163,191,0.25)'; ctx.lineWidth=2; rr(x,y,w,h,16); ctx.stroke();
+  ctx.fillStyle='#0A1E3C'; rr(x,y,w,52,16); ctx.fill(); ctx.fillRect(x,y+36,w,16);
+  for(let i=0;i<3;i++){ ctx.fillStyle=['#FF5F57','#FEBC2E','#28C840'][i];
+    ctx.beginPath(); ctx.arc(x+28+i*30,y+26,7,0,7); ctx.fill(); }
+  const pad=24; let yy=y+76; const tw=(w-pad*2-30)/3;
+  for(let i=0;i<3;i++){ const tx=x+pad+i*(tw+15);
+    ctx.fillStyle='#122E56'; rr(tx,yy,tw,86,12); ctx.fill();
+    ctx.fillStyle='#20406F'; rr(tx+16,yy+18,tw*0.5,16,6); ctx.fill();
+    ctx.fillStyle='#3D6EA8'; rr(tx+16,yy+48,tw*0.35,22,6); ctx.fill(); }
+  yy+=110;
+  const ph2=h-(yy-y)-24;
+  ctx.fillStyle='#122E56'; rr(x+pad,yy,w-pad*2,ph2,12); ctx.fill();
+  const bx=x+pad+30, bw=w-pad*2-60, bb=y+h-52;
+  for(let i=0;i<9;i++){ const bh=26+prand(i+7)*100;
+    ctx.fillStyle=blueGrad(0,bb-bh,0,bb); rr(bx+i*(bw/9),bb-bh,bw/9-14,bh,5); ctx.fill(); }
+}
+function scene4(t){
+  const a=inOut(t,30.6,31.6,41.2,42.2); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  // converging light
+  const g=ease(t,30.6,32.6);
+  const rg=ctx.createRadialGradient(W/2,H/2-40,0,W/2,H/2-40,600*(1.4-g*0.4));
+  rg.addColorStop(0,'rgba(11,179,255,'+(0.35*g)+')'); rg.addColorStop(1,'rgba(11,179,255,0)');
+  ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  // dashboard forms
+  const e=ease(t,32.2,33.6);
+  if(e>0){
+    const s=lerp(0.6,1,easeOutBack(e));
+    const dw=1060, dh=600;
+    ctx.save(); ctx.globalAlpha=a*e;
+    ctx.translate(W/2,H/2-50); ctx.scale(s,s); ctx.translate(-dw/2,-dh/2);
+    ctx.shadowColor='rgba(11,179,255,0.35)'; ctx.shadowBlur=60;
+    mockDashboard(0,0,dw,dh);
+    ctx.restore();
+  }
+  ctx.restore();
+  chip(t,34.0,34.8,40.8,41.8,S.chipOne);
+}
+
+// ---------- Scene 5 : compliance badges (42-52) ----------
+function miniQR(x,y,s){
+  ctx.fillStyle='#fff'; rr(x-6,y-6,s+12,s+12,6); ctx.fill();
+  const n=9, cell=s/n; ctx.fillStyle='#0A1428';
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){ if(prand(i*17+j*5)>0.5) ctx.fillRect(x+i*cell,y+j*cell,cell-0.6,cell-0.6); }
+}
+function scene5(t){
+  const a=inOut(t,42.0,42.8,51.2,52.2); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  // dashboard stays faint in back
+  ctx.save(); ctx.globalAlpha=a*0.35;
+  const dw=1060, dh=600;
+  ctx.translate(W/2,H/2-50); ctx.translate(-dw/2,-dh/2);
+  mockDashboard(0,0,dw,dh);
+  ctx.restore();
+  const badges=[
+    [S.vat,42.6,-460,-190,BLUE2,'vat'],
+    ['فاتورة  •  '+S.zatca,43.4,460,-190,GREEN,'qr'],
+    [S.hijri,44.2,-460,190,AMBER,'moon'],
+    [S.arabic,45.0,460,190,'#C4B5FD','ar'],
+  ];
+  for(const [label,t0,dx,dy,color,kind] of badges){
+    const e=ease(t,t0,t0+0.8); if(e<=0) continue;
+    ctx.save(); ctx.globalAlpha=a*e;
+    const s=easeOutBack(e);
+    const bx=W/2+dx, by=H/2-60+dy;
+    ctx.translate(bx,by); ctx.scale(s,s);
+    ctx.font='800 '+(AR?36:34)+'px '+FONT;
+    const bw=ctx.measureText(label).width+(kind==='qr'?200:120);
+    ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=28;
+    ctx.fillStyle='#0A1E3C'; rr(-bw/2,-58,bw,116,58); ctx.fill(); ctx.shadowBlur=0;
+    ctx.strokeStyle=color; ctx.lineWidth=4; rr(-bw/2,-58,bw,116,58); ctx.stroke();
+    if(kind==='qr'){ miniQR(-bw/2+34,-36,72); text(label,-bw/2+140,12,AR?36:34,color,'800','left'); }
+    else if(kind==='moon'){ // crescent
+      ctx.fillStyle=color; ctx.beginPath(); ctx.arc(-bw/2+56,0,26,0,7); ctx.fill();
+      ctx.fillStyle='#0A1E3C'; ctx.beginPath(); ctx.arc(-bw/2+66,-6,22,0,7); ctx.fill();
+      text(label,-bw/2+104,12,AR?36:34,color,'800','left'); }
+    else { text(label,0,12,AR?36:34,color,'800','center'); }
+    ctx.restore();
+  }
+  ctx.restore();
+  chip(t,45.8,46.6,50.8,51.8,S.chipKSA);
+}
+
+// ---------- Scene 6 : logo reveal (52-62) ----------
+function scene6(t){
+  const a=inOut(t,52.0,53.0,60.8,62.0); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  // car drives in
+  const drive=ease(t,52.2,54.2);
+  const carX=lerp(-260,W/2,drive);
+  const bob=Math.sin(t*10)*(drive<1?3:0);
+  drawCar(carX,H/2-160+bob,200,'#fff');
+  // wheels dust lines
+  if(drive<1){ ctx.strokeStyle='rgba(143,163,191,0.5)'; ctx.lineWidth=5; ctx.lineCap='round';
+    for(let i=0;i<3;i++){ ctx.beginPath(); ctx.moveTo(carX-160-i*40,H/2-150+i*18);
+      ctx.lineTo(carX-220-i*40,H/2-150+i*18); ctx.stroke(); } }
+  // wordmark
+  const e=ease(t,54.0,55.2);
+  ctx.globalAlpha=a*e;
+  ctx.font='800 96px '+LATIN; ctx.textAlign='center'; ctx.fillStyle=WHITE;
+  if(!AR) ctx.letterSpacing='6px';
+  ctx.fillText('SALIS AUTO',W/2,H/2+10);
+  ctx.letterSpacing='0px';
+  const uw=560*ease(t,54.8,55.8);
+  ctx.fillStyle=blueGrad(W/2-280,0,W/2+280,0); rr(W/2-uw/2,H/2+40,uw,8,4); ctx.fill();
+  const e2=ease(t,55.4,56.4);
+  ctx.globalAlpha=a*e2;
+  text(S.sub,W/2,H/2+110,AR?38:34,GRAY,'600','center',AR?0:8);
+  ctx.restore();
+}
+
+// ---------- Scene 7 : roadmap + end card (62-75) ----------
+function scene7(t){
+  const a=ease(t,62.0,63.0); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  text(S.follow,W/2,240,AR?72:66,WHITE,'800','center');
+  const a2=ease(t,63.0,63.8);
+  ctx.globalAlpha=a*a2;
+  text(S.follow2,W/2,310,AR?36:32,GRAY,'500','center');
+  // episode strip
+  const n=10, cw=150, gap=22, total=n*cw+(n-1)*gap, x0=(W-total)/2, y0=430;
+  for(let i=0;i<n;i++){
+    const e=ease(t,63.4+i*0.22,63.9+i*0.22); if(e<=0) continue;
+    ctx.save(); ctx.globalAlpha=a*e;
+    const x=x0+i*(cw+gap), y=y0+(1-easeOutBack(e))*60;
+    ctx.fillStyle='#0E2748'; rr(x,y,cw,200,14); ctx.fill();
+    ctx.strokeStyle='rgba(11,179,255,0.4)'; ctx.lineWidth=2; rr(x,y,cw,200,14); ctx.stroke();
+    ctx.fillStyle=blueGrad(x,y,x+cw,y); rr(x,y,cw,10,5); ctx.fill();
+    text(String(i+1),x+cw/2,y+120,64,'#3D6EA8','800','center',0,LATIN);
+    ctx.restore();
+  }
+  // Camry silhouette drives along the strip
+  const drv=ease(t,65.5,70.5);
+  if(drv>0){
+    const cx=lerp(x0-140,x0+total+140,drv);
+    ctx.save(); ctx.globalAlpha=a*inOut(t,65.5,66.0,70.0,70.8);
+    drawCar(cx,y0-52,130,'#EAF2FC');
+    ctx.restore();
+  }
+  // next pill
+  const a3=ease(t,68.0,69.0);
+  ctx.save(); ctx.globalAlpha=a*a3;
+  ctx.font='700 '+(AR?32:28)+'px '+FONT;
+  const bw=ctx.measureText(S.next).width+80;
+  ctx.fillStyle=blueGrad(W/2-bw/2,0,W/2+bw/2,0); rr(W/2-bw/2,780,bw,64,32); ctx.fill();
+  text(S.next,W/2,780+(AR?45:42),AR?32:28,WHITE,'700','center');
+  ctx.restore();
+  ctx.restore();
+  const f=ease(t,73.6,75.0);
+  if(f>0){ ctx.fillStyle='rgba(0,0,0,'+f+')'; ctx.fillRect(0,0,W,H); }
+}
+
+// ---------- main ----------
+window.renderFrame=function(t){
+  ctx.save();
+  ctx.letterSpacing='0px';
+  drawBG(t, t<8 ? 1-ease(t,6.5,8.5) : 0);
+  scene1(t); scene2(t); scene4(t); scene5(t); scene6(t); scene7(t);
+  drawCaption(t);
+  ctx.restore();
+  return true;
+};
+window.renderFrame(0);
+</script>
+</body>
+</html>

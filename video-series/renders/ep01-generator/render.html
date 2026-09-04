@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;background:#000;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+const W = 1920, H = 1080;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+// ---------- palette ----------
+const NAVY = '#0B1F3B', NAVY_D = '#071427', NAVY_L = '#123059';
+const BLUE1 = '#0A5ED7', BLUE2 = '#0BB3FF';
+const WHITE = '#FFFFFF', GRAY = '#8FA3BF', GRAY_D = '#5B6E8C';
+const GREEN = '#16A34A', ORANGE = '#F97316';
+const FONT = '"DejaVu Sans", Arial, Helvetica, sans-serif';
+
+// ---------- helpers ----------
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp  = (a,b,t)=>a+(b-a)*t;
+// eased 0→1 ramp between t0 and t1
+function ease(t,t0,t1){ const x = clamp((t-t0)/(t1-t0),0,1); return x*x*(3-2*x); }
+function easeOutBack(x){ const c1=1.20158, c3=c1+1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); }
+// fade in [a,b] and out [c,d]
+function inOut(t,a,b,c,d){ return ease(t,a,b) * (1-ease(t,c,d)); }
+
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function text(s,x,y,size,color,weight,align,spacing){
+  ctx.save();
+  ctx.fillStyle = color; ctx.textAlign = align||'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = (weight||'400')+' '+size+'px '+FONT;
+  if(spacing){ ctx.letterSpacing = spacing+'px'; }
+  ctx.fillText(s,x,y);
+  ctx.restore();
+}
+function wrap(s,maxW,size,weight){
+  ctx.font=(weight||'400')+' '+size+'px '+FONT;
+  const words=s.split(' '); const lines=[]; let line='';
+  for(const w of words){
+    const test=line?line+' '+w:w;
+    if(ctx.measureText(test).width>maxW && line){ lines.push(line); line=w; } else line=test;
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+function blueGrad(x0,y0,x1,y1){
+  const g=ctx.createLinearGradient(x0,y0,x1,y1);
+  g.addColorStop(0,BLUE1); g.addColorStop(1,BLUE2); return g;
+}
+// deterministic pseudo-random
+function prand(i){ const x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); }
+
+// ---------- background ----------
+function drawBG(t){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,NAVY); g.addColorStop(1,NAVY_D);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // slow drifting glow
+  const gx = W*0.5 + Math.sin(t*0.15)*W*0.25;
+  const gy = H*0.35 + Math.cos(t*0.11)*H*0.12;
+  const rg=ctx.createRadialGradient(gx,gy,0,gx,gy,900);
+  rg.addColorStop(0,'rgba(10,94,215,0.16)'); rg.addColorStop(1,'rgba(10,94,215,0)');
+  ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  // faint grid
+  ctx.save(); ctx.globalAlpha=0.05; ctx.strokeStyle='#5B8DD9'; ctx.lineWidth=1;
+  const off=(t*8)%80;
+  for(let x=-80+off;x<W+80;x+=80){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x-140,H); ctx.stroke(); }
+  ctx.restore();
+}
+
+// ---------- logo ----------
+function drawCar(x,y,s,color){ // simple car glyph, s = width
+  ctx.save(); ctx.translate(x,y); ctx.scale(s/200,s/200); ctx.fillStyle=color;
+  rr(-100,-14,200,34,16); ctx.fill();          // body
+  rr(-58,-46,104,44,18); ctx.fill();           // cabin
+  ctx.fillStyle=NAVY;                          // window notch
+  rr(-44,-38,34,28,8); ctx.fill(); rr(2,-38,34,28,8); ctx.fill();
+  ctx.fillStyle=color;
+  ctx.beginPath(); ctx.arc(-55,26,18,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(55,26,18,0,7); ctx.fill();
+  ctx.fillStyle=NAVY;
+  ctx.beginPath(); ctx.arc(-55,26,8,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(55,26,8,0,7); ctx.fill();
+  ctx.restore();
+}
+function drawLogo(cx,cy,scale,alpha,t){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.translate(cx,cy); ctx.scale(scale,scale);
+  drawCar(0,-120,180,'#fff');
+  ctx.textAlign='center'; ctx.fillStyle=WHITE;
+  ctx.font='800 96px '+FONT; ctx.letterSpacing='6px';
+  ctx.fillText('SALIS AUTO',0,30);
+  ctx.restore();
+}
+
+// ---------- caption (lower third) ----------
+const CAPTIONS = [
+  [0.6, 1.6, 6.6, 7.6, 'Running a garage means juggling bookings, job cards, parts, invoices, and customers — usually across five different tools.'],
+  [8.2, 9.0, 18.8, 19.6, 'SALIS AUTO puts all of it in one platform — a complete automotive ERP, from a single workshop to a multi-country franchise network.'],
+  [20.2, 21.0, 30.8, 31.6, 'The platform follows your real workflow: intake, check-in, diagnostics, parts, execution, billing, and analytics — in that order.'],
+  [32.2, 33.0, 40.8, 41.6, 'Every role gets its own portal. Customers book and track online; your team works in screens built for their job.'],
+  [42.2, 43.0, 50.8, 51.6, 'Saudi-market compliance is built in — 15% VAT, ZATCA e-invoicing QR codes, Hijri dates, and full Arabic support.'],
+  [52.2, 53.0, 58.0, 59.0, 'Try every part of it free — nine demo accounts. Next episode: how to log in.'],
+];
+function drawCaption(t){
+  for(const [a,b,c,d,s] of CAPTIONS){
+    const al=inOut(t,a,b,c,d); if(al<=0) continue;
+    const lines=wrap(s,1400,34,'500');
+    const lh=46, pad=26, w=1520, h=lines.length*lh+pad*2-8;
+    const x=(W-w)/2, y=H-90-h + (1-al)*20;
+    ctx.save(); ctx.globalAlpha=al;
+    ctx.fillStyle='rgba(4,12,26,0.78)'; rr(x,y,w,h,14); ctx.fill();
+    ctx.fillStyle=blueGrad(x,y,x,y+h); rr(x,y,8,h,4); ctx.fill();
+    lines.forEach((ln,i)=>text(ln,x+40,y+pad+26+i*lh,34,'#E8EFFA','500'));
+    ctx.restore();
+  }
+}
+
+// ---------- overlay chip (top area) ----------
+function chip(t,a,b,c,d,label,y){
+  const al=inOut(t,a,b,c,d); if(al<=0) return;
+  ctx.save(); ctx.globalAlpha=al;
+  ctx.font='600 30px '+FONT;
+  const w=ctx.measureText(label).width+70;
+  const x=(W-w)/2, yy=(y||70)+(1-al)*-14;
+  ctx.fillStyle='rgba(10,94,215,0.22)'; rr(x,yy,w,58,29); ctx.fill();
+  ctx.strokeStyle='rgba(11,179,255,0.55)'; ctx.lineWidth=2; rr(x,yy,w,58,29); ctx.stroke();
+  text(label,x+w/2,yy+39,30,'#BFE4FF','600','center');
+  ctx.restore();
+}
+
+// ---------- mock UI pieces ----------
+function mockWindow(x,y,w,h,title){
+  ctx.fillStyle='#0E2748'; rr(x,y,w,h,16); ctx.fill();
+  ctx.strokeStyle='rgba(143,163,191,0.25)'; ctx.lineWidth=2; rr(x,y,w,h,16); ctx.stroke();
+  ctx.fillStyle='#0A1E3C'; rr(x,y,w,52,16); ctx.fill(); ctx.fillRect(x,y+36,w,16);
+  for(let i=0;i<3;i++){ ctx.fillStyle=['#FF5F57','#FEBC2E','#28C840'][i];
+    ctx.beginPath(); ctx.arc(x+28+i*30,y+26,7,0,7); ctx.fill(); }
+  if(title) text(title,x+w/2,y+34,24,GRAY,'600','center');
+}
+function bar(x,y,w,h,color,r){ ctx.fillStyle=color; rr(x,y,w,h,r==null?6:r); ctx.fill(); }
+
+function mockLogin(x,y,w,h,tt){
+  mockWindow(x,y,w,h,'Sign in');
+  const fx=x+w*0.18, fw=w*0.64; let fy=y+h*0.28;
+  drawCar(x+w/2,fy-6,90,'#fff'); fy+=50;
+  bar(fx,fy,fw,44,'#122E56',10); text('client@salisauto.com',fx+18,fy+29,22,GRAY,'400'); fy+=62;
+  bar(fx,fy,fw,44,'#122E56',10); text('••••••••',fx+18,fy+31,22,GRAY,'400'); fy+=66;
+  ctx.fillStyle=blueGrad(fx,fy,fx+fw,fy); rr(fx,fy,fw,48,10); ctx.fill();
+  text('Sign In',fx+fw/2,fy+32,24,WHITE,'700','center');
+}
+function mockDashboard(x,y,w,h,tt){
+  mockWindow(x,y,w,h,'Dashboard');
+  const pad=24; let yy=y+76;
+  const tw=(w-pad*2-30)/3;
+  const kpis=[['Jobs today','18'],['Revenue','SAR 42,300'],['Bays busy','7 / 9']];
+  kpis.forEach((k,i)=>{ const tx=x+pad+i*(tw+15);
+    bar(tx,yy,tw,86,'#122E56',12);
+    text(k[0],tx+16,yy+32,18,GRAY,'500'); text(k[1],tx+16,yy+66,26,WHITE,'700'); });
+  yy+=110;
+  const ph2=h-(yy-y)-24;
+  bar(x+pad,yy,w-pad*2,ph2,'#122E56',12);
+  const bx=x+pad+30, bw=w-pad*2-60, bb=y+h-52;
+  for(let i=0;i<9;i++){ const bh=30+prand(i+7)*110;
+    ctx.fillStyle=blueGrad(0,bb-bh,0,bb); rr(bx+i*(bw/9),bb-bh,bw/9-14,bh,5); ctx.fill(); }
+  // line chart in upper part of panel
+  const ly0=yy+40, lh2=Math.max(ph2-220,80);
+  ctx.save(); ctx.beginPath();
+  const pts=[];
+  for(let i=0;i<=10;i++){ pts.push([bx+bw*i/10, ly0+lh2*(0.85-0.7*prand(i+21))]); }
+  ctx.moveTo(pts[0][0],pts[0][1]);
+  for(const p of pts) ctx.lineTo(p[0],p[1]);
+  ctx.strokeStyle=BLUE2; ctx.lineWidth=4; ctx.stroke();
+  ctx.lineTo(pts[10][0],ly0+lh2+30); ctx.lineTo(pts[0][0],ly0+lh2+30); ctx.closePath();
+  const ag=ctx.createLinearGradient(0,ly0,0,ly0+lh2+30);
+  ag.addColorStop(0,'rgba(11,179,255,0.25)'); ag.addColorStop(1,'rgba(11,179,255,0)');
+  ctx.fillStyle=ag; ctx.fill();
+  for(const p of pts){ ctx.fillStyle=WHITE; ctx.beginPath(); ctx.arc(p[0],p[1],4,0,7); ctx.fill(); }
+  ctx.restore();
+}
+function mockCalendar(x,y,w,h,tt){
+  mockWindow(x,y,w,h,'Workshop Calendar');
+  const pad=24, gx=x+pad, gy=y+76, gw=w-pad*2, gh=h-100;
+  bar(gx,gy,gw,gh,'#122E56',12);
+  ctx.strokeStyle='rgba(143,163,191,0.18)'; ctx.lineWidth=1;
+  for(let i=1;i<5;i++){ ctx.beginPath(); ctx.moveTo(gx+gw*i/5,gy); ctx.lineTo(gx+gw*i/5,gy+gh); ctx.stroke(); }
+  const cols=['#0A5ED7','#0BB3FF','#16A34A','#F97316','#7C6FF0'];
+  for(let i=0;i<10;i++){ const c=Math.floor(prand(i+3)*5), row=prand(i+11);
+    bar(gx+gw*c/5+10,gy+18+row*(gh-90),gw/5-20,54,cols[i%5]+'CC',8); }
+}
+function mockInvoice(x,y,w,h,detail,tt){
+  mockWindow(x,y,w,h,'Tax Invoice');
+  const pad=30; let yy=y+86;
+  text('INVOICE #INV-2451',x+pad,yy,26,WHITE,'700');
+  text('15 Rabiʻ I 1447  •  07 Sep 2025',x+pad,yy+30,18,GRAY,'400'); yy+=58;
+  const rows=[['Brake pad set (front)','SAR 420.00'],['Engine oil 5W-30 × 4L','SAR 180.00'],['Labor — 2.5 hrs','SAR 375.00']];
+  rows.forEach(r=>{ text(r[0],x+pad,yy+24,20,'#C9D6E8','400'); text(r[1],x+w-pad,yy+24,20,'#C9D6E8','500','right');
+    ctx.strokeStyle='rgba(143,163,191,0.15)'; ctx.beginPath(); ctx.moveTo(x+pad,yy+38); ctx.lineTo(x+w-pad,yy+38); ctx.stroke(); yy+=48; });
+  yy+=6;
+  // VAT highlight row
+  bar(x+pad-10,yy-4,w-pad*2+20,44,detail?'rgba(11,179,255,0.14)':'#122E56',8);
+  text('VAT (15%)',x+pad+4,yy+26,21,'#7FD4FF','700'); text('SAR 146.25',x+w-pad-4,yy+26,21,'#7FD4FF','700','right'); yy+=56;
+  text('TOTAL',x+pad,yy+28,24,WHITE,'800'); text('SAR 1,121.25',x+w-pad,yy+28,26,WHITE,'800','right');
+  // QR block
+  const qs=detail?150:110, qx=x+w-pad-qs, qy=y+h-qs-26;
+  ctx.fillStyle='#fff'; rr(qx-8,qy-8,qs+16,qs+16,8); ctx.fill();
+  const n=13, cell=qs/n; ctx.fillStyle='#0A1428';
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){ if(prand(i*31+j*7)>0.52) ctx.fillRect(qx+i*cell,qy+j*cell,cell-0.8,cell-0.8); }
+  // finder squares
+  const fin=(fx,fy)=>{ ctx.fillStyle='#0A1428'; ctx.fillRect(fx,fy,cell*3.4,cell*3.4);
+    ctx.fillStyle='#fff'; ctx.fillRect(fx+cell*0.7,fy+cell*0.7,cell*2,cell*2);
+    ctx.fillStyle='#0A1428'; ctx.fillRect(fx+cell*1.2,fy+cell*1.2,cell,cell); };
+  fin(qx,qy); fin(qx+qs-cell*3.4,qy); fin(qx,qy+qs-cell*3.4);
+  text('ZATCA e-invoice QR',qx+qs/2-2,qy+qs+34,16,GRAY,'500','center');
+}
+
+// ---------- Scene 1 : logo intro (0-8) ----------
+function scene1(t){
+  const a=inOut(t,0.2,1.2,6.8,8.0); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  const pop=easeOutBack(ease(t,0.2,1.4));
+  drawLogo(W/2,H/2-60,0.9+0.1*pop,1,t);
+  // underline sweep
+  const uw=560*ease(t,1.0,2.0);
+  ctx.fillStyle=blueGrad(W/2-280,0,W/2+280,0); rr(W/2-uw/2,H/2+8,uw,8,4); ctx.fill();
+  const a2=ease(t,1.6,2.4);
+  ctx.globalAlpha=a*a2;
+  text('AUTOMOTIVE ERP PLATFORM',W/2,H/2+78,34,GRAY,'600','center',8);
+  ctx.restore();
+  chip(t,0.8,1.6,6.6,7.6,'EPISODE 1  •  WELCOME TO SALIS AUTO');
+}
+
+// ---------- Scene 2 : montage (8-20) ----------
+function scene2(t){
+  const a=inOut(t,8.0,8.8,19.2,20.0); if(a<=0) return;
+  const cards=[
+    [mockLogin,'Sign in',8.4],[mockDashboard,'Dashboard',11.2],
+    [mockCalendar,'Workshop Calendar',14.0],[mockInvoice,'ZATCA Invoice',16.8]
+  ];
+  ctx.save(); ctx.globalAlpha=a;
+  const cw=880, chh=620, cy=(H-chh)/2-40;
+  cards.forEach((c,i)=>{
+    const t0=c[2];
+    const enter=ease(t,t0,t0+0.7);
+    if(enter<=0) return;
+    // active card slides to center; when the next enters, this one drifts left + shrinks
+    const next=i<3?cards[i+1][2]:99;
+    const leave=ease(t,next,next+0.7);
+    const x=lerp(W+cw*0.2,(W-cw)/2,enter)-leave*(cw*0.55+80);
+    const s=lerp(1,0.82,leave);
+    ctx.save();
+    ctx.globalAlpha=a*(1-leave*0.9);
+    ctx.translate(x+cw/2,cy+chh/2); ctx.scale(s,s); ctx.translate(-(x+cw/2),-(cy+chh/2));
+    ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=40; ctx.shadowOffsetY=16;
+    c[0](x,cy,cw,chh,false);
+    ctx.restore();
+  });
+  ctx.restore();
+  chip(t,9.0,9.8,19.0,19.8,'ONE PLATFORM. YOUR WHOLE GARAGE.');
+}
+
+// ---------- Scene 3 : sidebar / 18 groups (20-32) ----------
+const GROUPS=['Dashboard & Overview','Customer Intake & Appointments','Vehicle Management','Inspection & Check-In','Diagnostics & Assessment','Service Planning & Scheduling','Parts & Inventory','Service Execution & Operations','Quality & Delivery','Billing & Payments','Analytics & Business Intelligence','Customer Experience & Growth','Team & HR Management','Compliance & Safety','Enterprise & Franchise','Emerging Technologies','AI & Automation Hub','System & Settings'];
+function scene3(t){
+  const a=inOut(t,20.0,20.8,31.2,32.0); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  const slide=(1-ease(t,20.0,21.0))*-420;
+  const sx=140+slide, sy=120, sw=560, sh=H-260;
+  // sidebar panel
+  ctx.shadowColor='rgba(0,0,0,0.4)'; ctx.shadowBlur=30;
+  ctx.fillStyle='#0A1E3C'; rr(sx,sy,sw,sh,18); ctx.fill(); ctx.shadowBlur=0;
+  drawCar(sx+60,sy+56,54,'#fff');
+  text('SALIS AUTO',sx+105,sy+66,28,WHITE,'800');
+  ctx.strokeStyle='rgba(143,163,191,0.2)'; ctx.beginPath(); ctx.moveTo(sx+24,sy+96); ctx.lineTo(sx+sw-24,sy+96); ctx.stroke();
+  // scrolling list of the 18 groups
+  const local=clamp((t-21.2)/9.0,0,1);
+  const listH=GROUPS.length*58, viewH=sh-130;
+  const scroll=local*(listH-viewH+20);
+  ctx.save();
+  rr(sx+10,sy+108,sw-20,viewH,10); ctx.clip();
+  GROUPS.forEach((g,i)=>{
+    const gy=sy+120+i*58-scroll;
+    const hot=Math.abs((gy+22)-(sy+108+viewH*0.45))<30;
+    if(hot){ ctx.fillStyle='rgba(10,94,215,0.30)'; rr(sx+20,gy-8,sw-40,46,10); ctx.fill();
+      ctx.fillStyle=BLUE2; rr(sx+20,gy-8,5,46,2); ctx.fill(); }
+    ctx.fillStyle=hot?'#DCEBFF':'#93A8C6';
+    ctx.font=(hot?'700':'500')+' 25px '+FONT; ctx.textAlign='left';
+    ctx.fillText((i+1<10?'0':'')+(i+1)+'  '+g,sx+44,gy+22);
+  });
+  ctx.restore();
+  // right side mock content
+  const rx=sx+sw+50;
+  mockDashboard(rx,sy,W-rx-140+(-slide*0),sh,false);
+  ctx.restore();
+  chip(t,21.4,22.2,30.8,31.6,'18 WORKFLOW GROUPS — IN OPERATIONAL ORDER');
+}
+
+// ---------- Scene 4 : portals split (32-42) ----------
+function mockPhone(x,y,w,h){
+  ctx.fillStyle='#0A1E3C'; rr(x,y,w,h,44); ctx.fill();
+  ctx.strokeStyle='rgba(143,163,191,0.35)'; ctx.lineWidth=3; rr(x,y,w,h,44); ctx.stroke();
+  bar(x+w/2-50,y+16,100,10,'#122E56',5);
+  const px=x+26, pw=w-52; let yy=y+58;
+  text('Track Service',px,yy+8,26,WHITE,'800'); yy+=36;
+  text('Toyota Camry • JC-1042',px,yy+6,18,GRAY,'500'); yy+=30;
+  const steps=[['Checked in',1],['Diagnosed',1],['In repair',0.6],['Quality check',0],['Ready for pickup',0]];
+  steps.forEach((s,i)=>{
+    const done=s[1]>=1, active=s[1]>0&&s[1]<1;
+    ctx.fillStyle=done?GREEN:(active?BLUE2:'#1B3A66');
+    ctx.beginPath(); ctx.arc(px+16,yy+16,12,0,7); ctx.fill();
+    if(done){ ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.beginPath();
+      ctx.moveTo(px+10,yy+16); ctx.lineTo(px+14,yy+21); ctx.lineTo(px+22,yy+11); ctx.stroke(); }
+    if(i<steps.length-1){ ctx.strokeStyle=done?GREEN:'#1B3A66'; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.moveTo(px+16,yy+30); ctx.lineTo(px+16,yy+52); ctx.stroke(); }
+    text(s[0],px+42,yy+23,21,done||active?'#E8EFFA':GRAY,active?'700':'500');
+    yy+=56;
+  });
+  yy+=4;
+  ctx.fillStyle=blueGrad(px,yy,px+pw,yy); rr(px,yy,pw,46,12); ctx.fill();
+  text('Approve quotation',px+pw/2,yy+30,20,WHITE,'700','center');
+}
+function mockAdvisor(x,y,w,h){
+  mockWindow(x,y,w,h,'Service Advisor — Appointments');
+  const pad=26; let yy=y+80;
+  const rows=[['09:00','Amal K. — Oil change','Confirmed',GREEN],['09:45','Faisal R. — Brake inspection','Checked in',BLUE2],['10:30','Layla M. — AC service','New booking',ORANGE],['11:15','Omar T. — Tire rotation','Confirmed',GREEN],['12:00','Sara H. — Diagnostics','Estimate sent',BLUE2]];
+  rows.forEach(r=>{
+    bar(x+pad,yy,w-pad*2,54,'#122E56',10);
+    text(r[0],x+pad+18,yy+34,21,'#7FD4FF','700');
+    text(r[1],x+pad+110,yy+34,21,'#DCE7F5','500');
+    ctx.font='600 17px '+FONT; const bw=ctx.measureText(r[2]).width+28;
+    ctx.fillStyle=r[3]+'33'; rr(x+w-pad-bw-14,yy+12,bw,30,15); ctx.fill();
+    text(r[2],x+w-pad-14-bw/2,yy+32,17,r[3],'600','center');
+    yy+=64;
+  });
+}
+function scene4(t){
+  const a=inOut(t,32.0,32.8,41.2,42.0); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  const eL=ease(t,32.2,33.2), eR=ease(t,32.6,33.6);
+  const ph=700, pw=340;
+  ctx.save(); ctx.translate((1-eL)*-400,0);
+  ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=36;
+  mockPhone(240,(H-ph)/2-30,pw,ph); ctx.restore();
+  ctx.save(); ctx.translate((1-eR)*500,0);
+  ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=36;
+  mockAdvisor(700,(H-620)/2-30,1020,620); ctx.restore();
+  // role tags above each frame's top-left corner
+  const tag=(label,tx,ty)=>{ ctx.font='700 20px '+FONT;
+    const tw2=ctx.measureText(label).width+44;
+    ctx.fillStyle=blueGrad(tx,ty,tx+tw2,ty); rr(tx,ty,tw2,38,19); ctx.fill();
+    text(label,tx+tw2/2,ty+26,20,WHITE,'700','center',2); };
+  tag('CUSTOMER',262,(H-ph)/2-48);
+  tag('SERVICE ADVISOR',722,(H-620)/2-8-40);
+  ctx.restore();
+  chip(t,33.4,34.2,40.8,41.6,'A PORTAL FOR EVERY ROLE');
+}
+
+// ---------- Scene 5 : compliance zoom (42-52) ----------
+function scene5(t){
+  const a=inOut(t,42.0,42.8,51.2,52.0); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  const iw=900, ih=620;
+  const ix=(W-iw)/2, iy=(H-ih)/2-6;
+  const z=1+0.14*ease(t,44.0,50.0);           // slow push-in
+  // anchor the zoom near the invoice top so the title never hits the chip
+  const ax=W/2, ay=iy+70;
+  ctx.translate(ax,ay); ctx.scale(z,z); ctx.translate(-ax,-ay);
+  ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=44;
+  mockInvoice(ix,iy,iw,ih,true);
+  // ZATCA badge (in the free bottom-left area of the invoice)
+  const ba=inOut(t,45.0,45.8,50.8,51.6);
+  if(ba>0){ ctx.save(); ctx.globalAlpha=a*ba;
+    const pulse=1+0.04*Math.sin((t-45)*4);
+    const bx=ix+240, by=iy+ih-110;
+    ctx.translate(bx,by); ctx.scale(pulse,pulse);
+    ctx.fillStyle='rgba(22,163,74,0.18)'; rr(-175,-36,350,72,36); ctx.fill();
+    ctx.strokeStyle=GREEN; ctx.lineWidth=3; rr(-175,-36,350,72,36); ctx.stroke();
+    ctx.strokeStyle=GREEN; ctx.lineWidth=6; ctx.beginPath();
+    ctx.moveTo(-140,2); ctx.lineTo(-126,16); ctx.lineTo(-102,-14); ctx.stroke();
+    text('ZATCA READY',-76,10,28,'#5EE39A','800','left',2);
+    ctx.restore(); }
+  ctx.restore();
+  chip(t,43.2,44.0,50.8,51.6,'BUILT-IN SAUDI COMPLIANCE — VAT • ZATCA • HIJRI • ARABIC');
+}
+
+// ---------- Scene 6 : end card (52-60) ----------
+function scene6(t){
+  const a=ease(t,52.0,53.0); if(a<=0) return;
+  ctx.save(); ctx.globalAlpha=a;
+  drawLogo(W/2,260,0.62,1,t);
+  const a2=ease(t,53.0,53.8);
+  ctx.globalAlpha=a*a2;
+  text('Try it free',W/2,H/2+40,84,WHITE,'800','center');
+  text('9 demo accounts — one for every role in the garage',W/2,H/2+104,34,GRAY,'500','center');
+  const a3=ease(t,53.8,54.6);
+  ctx.globalAlpha=a*a3;
+  const label='NEXT  ▸  EPISODE 2 : FREE DEMO ACCOUNTS & LOGGING IN';
+  ctx.font='700 28px '+FONT; const bw=ctx.measureText(label).width+80;
+  ctx.fillStyle=blueGrad(W/2-bw/2,0,W/2+bw/2,0); rr(W/2-bw/2,H/2+170,bw,64,32); ctx.fill();
+  text(label,W/2,H/2+212,28,WHITE,'700','center');
+  ctx.restore();
+  // final fade to black
+  const f=ease(t,58.8,60.0);
+  if(f>0){ ctx.fillStyle='rgba(0,0,0,'+f+')'; ctx.fillRect(0,0,W,H); }
+}
+
+// ---------- main ----------
+window.renderFrame = function(t){
+  ctx.save();
+  ctx.letterSpacing='0px';
+  drawBG(t);
+  scene1(t); scene2(t); scene3(t); scene4(t); scene5(t); scene6(t);
+  drawCaption(t);
+  ctx.restore();
+  return true;
+};
+window.renderFrame(0);
+</script>
+</body>
+</html>

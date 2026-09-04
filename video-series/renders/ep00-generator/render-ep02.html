@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;padding:0;background:#000;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+const W=1920,H=1080;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const LANG=(new URLSearchParams(location.search).get('lang'))||'en';
+const AR=LANG==='ar';
+
+const NAVY='#0B1F3B',NAVY_D='#071427';
+const BLUE1='#0A5ED7',BLUE2='#0BB3FF';
+const WHITE='#FFFFFF',GRAY='#8FA3BF';
+const GREEN='#16A34A',ORANGE='#F97316',AMBER='#FBBF24';
+const LATIN='"DejaVu Sans", Arial, sans-serif';
+const ARABIC='"Noto Sans Arabic", "DejaVu Sans", sans-serif';
+const FONT=AR?ARABIC:LATIN;
+const MONO='"DejaVu Sans Mono", monospace';
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+function ease(t,t0,t1){const x=clamp((t-t0)/(t1-t0),0,1);return x*x*(3-2*x);}
+function easeOutBack(x){const c1=1.20158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2);}
+function inOut(t,a,b,c,d){return ease(t,a,b)*(1-ease(t,c,d));}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function text(s,x,y,size,color,weight,align,font){ctx.save();ctx.fillStyle=color;ctx.textAlign=align||'left';ctx.font=(weight||'400')+' '+size+'px '+(font||FONT);ctx.fillText(s,x,y);ctx.restore();}
+function wrap(s,maxW,size,weight,font){ctx.font=(weight||'400')+' '+size+'px '+(font||FONT);const words=s.split(' ');const lines=[];let line='';for(const w of words){const t2=line?line+' '+w:w;if(ctx.measureText(t2).width>maxW&&line){lines.push(line);line=w;}else line=t2;}if(line)lines.push(line);return lines;}
+function blueGrad(x0,y0,x1,y1){const g=ctx.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,BLUE1);g.addColorStop(1,BLUE2);return g;}
+function prand(i){const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);}
+
+// ---------- strings ----------
+const ACCOUNTS=[
+  ['Platform Admin','superadmin@salisauto.com','superadmin123','المشرف العام'],
+  ['Admin','admin@salisauto.com','admin123','مدير الورشة'],
+  ['Service Advisor','serviceadvisor@salisauto.com','advisor123','مستشار الخدمة'],
+  ['Technician','tech@salisauto.com','tech123','الفني'],
+  ['Store Keeper','storekeeper@salisauto.com','storekeeper123','أمين المستودع'],
+  ['Finance','finance@salisauto.com','finance123','المالية'],
+  ['Support','support@salisauto.com','support123','الدعم'],
+  ['Customer','client@salisauto.com','client123','العميل'],
+  ['Purchase Agent','agent@salisauto.com','agent123','وكيل المشتريات'],
+];
+const S = AR ? {
+  chip1:'الحلقة ٢  •  الحسابات التجريبية المجانية',
+  title:'٩ حسابات مجانية', sub:'حساب لكل دور في الورشة — بدون تسجيل',
+  tblRole:'الدور', tblMail:'البريد', tblPass:'كلمة المرور',
+  warn:'⚠ حسابات تجريبية — احذفها قبل الإطلاق',
+  step:['الخطوة ١ — افتح صفحة الدخول','الخطوة ٢ — أدخل بيانات الحساب','الخطوة ٣ — اضغط تسجيل الدخول','الخطوة ٤ — وصلت إلى بوابتك','الخطوة ٥ — سجّل الخروج وبدّل الدور'],
+  signin:'تسجيل الدخول', portal:'بوابة العملاء',
+  routed:'الدور: عميل  ←  ‎/portal/dashboard',
+  others:[['المالية','finance@','‎/finance-portal'],['الفني','tech@','‎/technician-portal'],['الدعم','support@','‎/support-portal']],
+  endTitle:'دورك الآن', endSub:'سجّل الدخول واستكشف — ٩ حسابات بانتظارك',
+  next:'التالي  ◂  الحلقة ٣ : بوابة العملاء',
+  caps:[
+    [0.6,1.6,6.8,7.8,'لست بحاجة إلى التسجيل لتستكشف «سالس أوتو» — النسخة التجريبية تأتي مع تسعة حسابات مجانية، حساب لكل دور في الورشة.'],
+    [8.2,9.0,18.8,19.6,'ها هي أمامك. كل حساب بكلمة مرور بسيطة: اسم الدور متبوعاً بـ«123». صوّر الجدول، أو ستجده في دليل المنصة.'],
+    [20.2,21.0,24.8,25.6,'لنسجّل الدخول كعميل. افتح التطبيق وستصل إلى صفحة تسجيل الدخول.'],
+    [26.2,27.0,34.8,35.6,'أدخل البريد التجريبي client@salisauto.com وكلمة المرور client123.'],
+    [36.2,37.0,44.8,45.6,'اضغط «تسجيل الدخول» ولاحظ: المنصة تقرأ دور الحساب وتوجهك مباشرة إلى بوابتك — دون حفظ أي روابط.'],
+    [46.2,47.0,51.8,52.6,'ولأن هذا حساب عميل، وصلنا إلى بوابة العملاء، والبيانات التجريبية جاهزة أمامنا.'],
+    [53.2,54.0,63.8,64.6,'ولتجربة دور آخر، سجّل الخروج وادخل بحساب آخر من الجدول — المالية، الفني، الدعم — كلٌّ يصل إلى بوابته.'],
+    [65.2,66.0,71.8,73.0,'هذا كل شيء. في الحلقة القادمة نبقى بحساب العميل ونحجز موعد صيانة حقيقياً. أراكم هناك.'],
+  ],
+} : {
+  chip1:'EPISODE 2  •  FREE DEMO ACCOUNTS',
+  title:'9 free accounts', sub:'One for every role in the garage — no sign-up',
+  tblRole:'ROLE', tblMail:'EMAIL', tblPass:'PASSWORD',
+  warn:'⚠ Demo accounts — remove before production',
+  step:['STEP 1 — Open the login page','STEP 2 — Enter the credentials','STEP 3 — Click Sign In','STEP 4 — You land in your portal','STEP 5 — Log out & switch roles'],
+  signin:'Sign In', portal:'Customer Portal',
+  routed:'role: CUSTOMER  →  /portal/dashboard',
+  others:[['Finance','finance@','/finance-portal'],['Technician','tech@','/technician-portal'],['Support','support@','/support-portal']],
+  endTitle:'Your turn', endSub:'Log in and explore — 9 accounts are waiting',
+  next:'NEXT  ▸  EPISODE 3 : THE CUSTOMER PORTAL',
+  caps:[
+    [0.6,1.6,6.8,7.8,"You don't need to sign up to explore SALIS AUTO — the demo ships with nine free accounts, one for every role in a garage."],
+    [8.2,9.0,18.8,19.6,'Here they are. Every password is simple: the role name plus one-two-three. Screenshot this table, or find it in the Platform Guide.'],
+    [20.2,21.0,24.8,25.6,"Let's log in as a customer. Open the app and you'll land on the login page."],
+    [26.2,27.0,34.8,35.6,'Enter the demo email — client@salisauto.com — and the password, client123.'],
+    [36.2,37.0,44.8,45.6,'Click Sign In and watch: the platform reads the account’s role and routes you straight to the right portal — no URLs to remember.'],
+    [46.2,47.0,51.8,52.6,'Because this is a customer account, we land in the Customer Portal, with the seeded demo data ready to explore.'],
+    [53.2,54.0,63.8,64.6,'To try a different role, log out and sign in with another account from the table — finance, technician, support — each lands in its own portal.'],
+    [65.2,66.0,71.8,73.0,"That's all there is to it. Next episode we stay logged in as the customer and book a real service. See you there."],
+  ],
+};
+
+// ---------- background / caption / chip (same system as ep00) ----------
+function drawBG(t){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,NAVY);g.addColorStop(1,NAVY_D);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const gx=W*0.5+Math.sin(t*0.15)*W*0.25,gy=H*0.35+Math.cos(t*0.11)*H*0.12;
+  const rg=ctx.createRadialGradient(gx,gy,0,gx,gy,900);
+  rg.addColorStop(0,'rgba(10,94,215,0.14)');rg.addColorStop(1,'rgba(10,94,215,0)');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.globalAlpha=0.05;ctx.strokeStyle='#5B8DD9';ctx.lineWidth=1;
+  const off=(t*8)%80;
+  for(let x=-80+off;x<W+80;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x-140,H);ctx.stroke();}
+  ctx.restore();
+}
+function drawCaption(t){
+  for(const [a,b,c,d,s] of S.caps){
+    const al=inOut(t,a,b,c,d);if(al<=0)continue;
+    const size=AR?36:34,lh=AR?54:46;
+    const lines=wrap(s,1400,size,AR?'600':'500');
+    const pad=26,w=1520,h=lines.length*lh+pad*2-8;
+    const x=(W-w)/2,y=H-90-h+(1-al)*20;
+    ctx.save();ctx.globalAlpha=al;
+    ctx.fillStyle='rgba(4,12,26,0.78)';rr(x,y,w,h,14);ctx.fill();
+    ctx.fillStyle=blueGrad(x,y,x,y+h);
+    if(AR){rr(x+w-8,y,8,h,4);}else{rr(x,y,8,h,4);}ctx.fill();
+    ctx.save();if(AR)ctx.direction='rtl';
+    lines.forEach((ln,i)=>{
+      if(AR)text(ln,x+w-40,y+pad+30+i*lh,size,'#E8EFFA','600','right');
+      else text(ln,x+40,y+pad+26+i*lh,size,'#E8EFFA','500','left');
+    });
+    ctx.restore();ctx.restore();
+  }
+}
+function chip(t,a,b,c,d,label,y){
+  const al=inOut(t,a,b,c,d);if(al<=0)return;
+  ctx.save();ctx.globalAlpha=al;
+  ctx.font='600 '+(AR?32:30)+'px '+FONT;
+  const w=ctx.measureText(label).width+70;
+  const x=(W-w)/2,yy=(y||70)+(1-al)*-14;
+  ctx.fillStyle='rgba(10,94,215,0.22)';rr(x,yy,w,58,29);ctx.fill();
+  ctx.strokeStyle='rgba(11,179,255,0.55)';ctx.lineWidth=2;rr(x,yy,w,58,29);ctx.stroke();
+  text(label,x+w/2,yy+(AR?41:39),AR?32:30,'#BFE4FF','600','center');
+  ctx.restore();
+}
+// step badge shown near the action
+function stepBadge(t,a,b,c,d,label){
+  const al=inOut(t,a,b,c,d);if(al<=0)return;
+  ctx.save();ctx.globalAlpha=al;
+  ctx.font='700 '+(AR?30:27)+'px '+FONT;
+  const w=ctx.measureText(label).width+64;
+  const x=(W-w)/2,y=150+(1-al)*-12;
+  ctx.fillStyle=blueGrad(x,y,x+w,y);rr(x,y,w,54,27);ctx.fill();
+  text(label,x+w/2,y+(AR?38:36),AR?30:27,WHITE,'700','center');
+  ctx.restore();
+}
+function drawCar(x,y,s,color){
+  ctx.save();ctx.translate(x,y);ctx.scale(s/200,s/200);ctx.fillStyle=color;
+  rr(-100,-14,200,34,16);ctx.fill();rr(-58,-46,104,44,18);ctx.fill();
+  ctx.fillStyle=NAVY;rr(-44,-38,34,28,8);ctx.fill();rr(2,-38,34,28,8);ctx.fill();
+  ctx.fillStyle=color;
+  ctx.beginPath();ctx.arc(-55,26,18,0,7);ctx.fill();ctx.beginPath();ctx.arc(55,26,18,0,7);ctx.fill();
+  ctx.fillStyle=NAVY;
+  ctx.beginPath();ctx.arc(-55,26,8,0,7);ctx.fill();ctx.beginPath();ctx.arc(55,26,8,0,7);ctx.fill();
+  ctx.restore();
+}
+
+// ---------- Scene 1: title + keys (0-8) ----------
+function keyIcon(x,y,s,color){
+  ctx.save();ctx.translate(x,y);ctx.rotate(-0.6);ctx.strokeStyle=color;ctx.lineWidth=s*0.16;ctx.lineCap='round';
+  ctx.beginPath();ctx.arc(0,0,s*0.32,0,7);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(s*0.32,0);ctx.lineTo(s*1.05,0);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(s*0.75,0);ctx.lineTo(s*0.75,s*0.28);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(s*1.0,0);ctx.lineTo(s*1.0,s*0.34);ctx.stroke();
+  ctx.restore();
+}
+function scene1(t){
+  const a=inOut(t,0.0,1.0,6.8,8.0);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;
+  const pop=easeOutBack(ease(t,0.3,1.4));
+  ctx.save();ctx.translate(W/2,H/2-160);ctx.scale(pop,pop);
+  for(let i=0;i<3;i++){ctx.save();ctx.rotate((i-1)*0.5);ctx.translate(0,-30);
+    keyIcon(0,0,90,['#3D6EA8',BLUE2,'#7FD4FF'][i]);ctx.restore();}
+  ctx.restore();
+  const a2=ease(t,1.2,2.2);
+  ctx.globalAlpha=a*a2;
+  text(S.title,W/2,H/2+60,AR?84:88,WHITE,'800','center');
+  const a3=ease(t,1.8,2.8);
+  ctx.globalAlpha=a*a3;
+  text(S.sub,W/2,H/2+130,AR?38:34,GRAY,'500','center');
+  ctx.restore();
+  chip(t,0.6,1.4,6.6,7.6,S.chip1);
+}
+
+// ---------- Scene 2: credentials table (8-20) ----------
+function scene2(t){
+  const a=inOut(t,8.0,8.8,19.2,20.2);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;
+  const w=1400,rowH=64,hdr=70,h=hdr+ACCOUNTS.length*rowH+24;
+  const x=(W-w)/2,y=108;
+  ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=40;
+  ctx.fillStyle='#0E2748';rr(x,y,w,h,18);ctx.fill();ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(11,179,255,0.4)';ctx.lineWidth=2;rr(x,y,w,h,18);ctx.stroke();
+  ctx.fillStyle='rgba(10,94,215,0.25)';rr(x,y,w,hdr,18);ctx.fill();ctx.fillRect(x,y+hdr-18,w,18);
+  // columns: role 360, email 640, pass 400  (mirrored for AR)
+  const cRole=AR?x+w-40:x+40, cMail=AR?x+w-420:x+420, cPass=AR?x+w-1080:x+1080;
+  const alignR=AR?'right':'left';
+  text(S.tblRole,cRole,y+46,26,'#BFE4FF','800',alignR);
+  text(S.tblMail,cMail,y+46,26,'#BFE4FF','800',alignR,LATIN);
+  text(S.tblPass,cPass,y+46,26,'#BFE4FF','800',alignR,LATIN);
+  ACCOUNTS.forEach((acc,i)=>{
+    const e=ease(t,8.8+i*0.28,9.3+i*0.28);if(e<=0)return;
+    ctx.save();ctx.globalAlpha=a*e;
+    const ry=y+hdr+i*rowH+ (1-e)*14;
+    if(i%2)  {ctx.fillStyle='rgba(255,255,255,0.03)';ctx.fillRect(x+10,ry,w-20,rowH);}
+    // highlight the customer row (the one we use next)
+    const isClient=acc[1].startsWith('client');
+    if(isClient&&t>14){const hl=ease(t,14,14.8);ctx.fillStyle='rgba(11,179,255,'+(0.15*hl)+')';rr(x+10,ry,w-20,rowH,10);ctx.fill();
+      ctx.strokeStyle='rgba(11,179,255,'+(0.8*hl)+')';ctx.lineWidth=2;rr(x+10,ry,w-20,rowH,10);ctx.stroke();}
+    text(AR?acc[3]:acc[0],cRole,ry+42,27,'#E8EFFA','700',alignR);
+    text(acc[1],cMail,ry+42,26,'#9FD8FF','500',alignR,LATIN);
+    text(acc[2],cPass,ry+42,26,'#C9D6E8','500',alignR,LATIN);
+    ctx.restore();
+  });
+  const wa=inOut(t,11.5,12.3,18.8,19.8);
+  if(wa>0){ctx.globalAlpha=a*wa;
+    text(S.warn,W/2,y+h+38,AR?27:24,ORANGE,'600','center');}
+  ctx.restore();
+}
+
+// ---------- login panel used by scenes 3-5 ----------
+function loginPanel(x,y,w,h,emailChars,passChars,pressed,caret){
+  ctx.fillStyle='#0E2748';rr(x,y,w,h,20);ctx.fill();
+  ctx.strokeStyle='rgba(143,163,191,0.3)';ctx.lineWidth=2;rr(x,y,w,h,20);ctx.stroke();
+  drawCar(x+w/2,y+92,110,'#fff');
+  text('SALIS AUTO',x+w/2,y+158,34,WHITE,'800','center',LATIN);
+  const fx=x+60,fw=w-120;let fy=y+200;
+  // email field
+  ctx.fillStyle='#122E56';rr(fx,fy,fw,58,12);ctx.fill();
+  if(emailChars>0){const s='client@salisauto.com'.slice(0,Math.floor(emailChars));
+    text(s+(caret&&emailChars<20?'|':''),fx+20,fy+38,26,'#E8EFFA','500','left',MONO);}
+  else text('email',fx+20,fy+38,24,GRAY,'400','left',LATIN);
+  fy+=78;
+  ctx.fillStyle='#122E56';rr(fx,fy,fw,58,12);ctx.fill();
+  if(passChars>0){text('•'.repeat(Math.min(Math.floor(passChars),9))+(caret&&passChars<9?'|':''),fx+20,fy+40,26,'#E8EFFA','500','left',LATIN);}
+  else text('password',fx+20,fy+38,24,GRAY,'400','left',LATIN);
+  fy+=84;
+  const pr=pressed?0.94:1;
+  ctx.save();ctx.translate(fx+fw/2,fy+29);ctx.scale(pr,pr);ctx.translate(-(fx+fw/2),-(fy+29));
+  ctx.fillStyle=blueGrad(fx,fy,fx+fw,fy);rr(fx,fy,fw,58,12);ctx.fill();
+  text(S.signin,fx+fw/2,fy+(AR?42:38),AR?30:26,WHITE,'700','center');
+  ctx.restore();
+}
+// ---------- portal dashboard mock ----------
+function portalMock(x,y,w,h,tag){
+  ctx.fillStyle='#0E2748';rr(x,y,w,h,16);ctx.fill();
+  ctx.strokeStyle='rgba(143,163,191,0.25)';ctx.lineWidth=2;rr(x,y,w,h,16);ctx.stroke();
+  ctx.fillStyle='#0A1E3C';rr(x,y,w,52,16);ctx.fill();ctx.fillRect(x,y+36,w,16);
+  for(let i=0;i<3;i++){ctx.fillStyle=['#FF5F57','#FEBC2E','#28C840'][i];ctx.beginPath();ctx.arc(x+28+i*30,y+26,7,0,7);ctx.fill();}
+  text(tag,x+w/2,y+34,24,GRAY,'600','center');
+  const pad=22;let yy=y+72;const tw=(w-pad*2-24)/3;
+  for(let i=0;i<3;i++){const tx=x+pad+i*(tw+12);
+    ctx.fillStyle='#122E56';rr(tx,yy,tw,78,10);ctx.fill();
+    ctx.fillStyle='#20406F';rr(tx+14,yy+16,tw*0.55,14,5);ctx.fill();
+    ctx.fillStyle='#3D6EA8';rr(tx+14,yy+42,tw*0.35,20,5);ctx.fill();}
+  yy+=98;
+  ctx.fillStyle='#122E56';rr(x+pad,yy,w-pad*2,h-(yy-y)-20,10);ctx.fill();
+  const bx=x+pad+24,bw=w-pad*2-48,bb=y+h-40;
+  for(let i=0;i<8;i++){const bh=20+prand(i+3)*70;
+    ctx.fillStyle=blueGrad(0,bb-bh,0,bb);rr(bx+i*(bw/8),bb-bh,bw/8-10,bh,4);ctx.fill();}
+}
+
+// ---------- Scene 3+4: login + typing (20-36) ----------
+function scene34(t){
+  const a=inOut(t,20.0,20.8,35.4,36.4);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;
+  const e=easeOutBack(ease(t,20.2,21.2));
+  const pw=640,ph=460,x=(W-pw)/2,y=(H-ph)/2-60+(1-e)*60;
+  ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=40;
+  const emailChars=clamp((t-26.6)*7,0,20);
+  const passChars=clamp((t-30.6)*6,0,9);
+  loginPanel(x,y,pw,ph,emailChars,passChars,false,Math.floor(t*2.5)%2===0);
+  ctx.restore();
+  stepBadge(t,20.4,21.2,25.2,26.0,S.step[0]);
+  stepBadge(t,26.4,27.2,34.6,35.4,S.step[1]);
+}
+
+// ---------- Scene 5: sign in + routing (36-46) ----------
+function scene5(t){
+  const a=inOut(t,36.0,36.6,45.4,46.4);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;
+  const shift=ease(t,38.4,39.6);   // login slides left, portal enters right
+  const pw=560,ph=420;
+  const lx=lerp((W-pw)/2,180,shift), ly=(H-ph)/2-60;
+  ctx.save();ctx.globalAlpha=a*(1-shift*0.35);
+  ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=30;
+  loginPanel(lx,ly,pw,ph,20,9,t>36.8&&t<37.6,false);
+  ctx.restore();
+  // routing card
+  const r=ease(t,37.4,38.4);
+  if(r>0){ctx.save();ctx.globalAlpha=a*r*(1-ease(t,44.8,45.8));
+    ctx.font='700 30px '+(AR?ARABIC:MONO);
+    const label=S.routed,bw2=ctx.measureText(label).width+80;
+    const bx=(W-bw2)/2,by=ly+ph+40;
+    ctx.fillStyle='rgba(22,163,74,0.15)';rr(bx,by,bw2,64,32);ctx.fill();
+    ctx.strokeStyle=GREEN;ctx.lineWidth=2.5;rr(bx,by,bw2,64,32);ctx.stroke();
+    text(label,bx+bw2/2,by+42,30,'#5EE39A','700','center',AR?ARABIC:MONO);
+    ctx.restore();}
+  // portal slides in
+  if(shift>0){ctx.save();ctx.globalAlpha=a*shift;
+    const px=lerp(W+100,860,shift);
+    ctx.shadowColor='rgba(11,179,255,0.3)';ctx.shadowBlur=50;
+    portalMock(px,ly-40,880,520,S.portal);
+    ctx.restore();}
+  ctx.restore();
+  stepBadge(t,36.4,37.2,40.6,41.4,S.step[2]);
+  stepBadge(t,41.6,42.4,45.0,45.8,S.step[3]);
+}
+
+// ---------- Scene 6: inside the portal (46-53) ----------
+function scene6(t){
+  const a=inOut(t,46.0,46.8,52.4,53.4);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;
+  const e=ease(t,46.2,47.2);
+  const w2=1240,h2=640;
+  ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=44;
+  portalMock((W-w2)/2,120+(1-e)*40,w2,h2,S.portal);
+  ctx.restore();
+}
+
+// ---------- Scene 7: switch roles (53-65) ----------
+function scene7(t){
+  const a=inOut(t,53.0,53.8,64.2,65.2);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;
+  S.others.forEach((o,i)=>{
+    const e=ease(t,54.0+i*1.6,54.9+i*1.6);if(e<=0)return;
+    ctx.save();ctx.globalAlpha=a*e;
+    const cw=520,chh=300,gap=60;
+    const x=(W-3*cw-2*gap)/2+i*(cw+gap), y=250+(1-easeOutBack(e))*70;
+    ctx.shadowColor='rgba(0,0,0,0.45)';ctx.shadowBlur=28;
+    ctx.fillStyle='#0E2748';rr(x,y,cw,chh,18);ctx.fill();ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(11,179,255,0.35)';ctx.lineWidth=2;rr(x,y,cw,chh,18);ctx.stroke();
+    ctx.fillStyle=blueGrad(x,y,x+cw,y);rr(x,y,cw,10,5);ctx.fill();
+    text(AR?o[0]:o[0],x+cw/2,y+80,AR?38:34,WHITE,'800','center');
+    text(o[1]+'…',x+cw/2,y+140,28,'#9FD8FF','500','center',LATIN);
+    // arrow down
+    ctx.strokeStyle=GREEN;ctx.lineWidth=5;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(x+cw/2,y+168);ctx.lineTo(x+cw/2,y+206);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x+cw/2-12,y+194);ctx.lineTo(x+cw/2,y+208);ctx.lineTo(x+cw/2+12,y+194);ctx.stroke();
+    text(o[2],x+cw/2,y+252,26,'#5EE39A','700','center',LATIN);
+    ctx.restore();
+  });
+  ctx.restore();
+  stepBadge(t,53.4,54.2,63.6,64.4,S.step[4]);
+}
+
+// ---------- Scene 8: end card (65-75) ----------
+function scene8(t){
+  const a=ease(t,65.0,66.0);if(a<=0)return;
+  ctx.save();ctx.globalAlpha=a;
+  drawCar(W/2,240,150,'#fff');
+  text('SALIS AUTO',W/2,330,54,WHITE,'800','center',LATIN);
+  const a2=ease(t,66.0,66.8);
+  ctx.globalAlpha=a*a2;
+  text(S.endTitle,W/2,H/2+30,AR?76:80,WHITE,'800','center');
+  text(S.endSub,W/2,H/2+100,AR?36:32,GRAY,'500','center');
+  const a3=ease(t,66.8,67.6);
+  ctx.globalAlpha=a*a3;
+  ctx.font='700 '+(AR?32:28)+'px '+FONT;
+  const bw=ctx.measureText(S.next).width+80;
+  ctx.fillStyle=blueGrad(W/2-bw/2,0,W/2+bw/2,0);rr(W/2-bw/2,H/2+160,bw,64,32);ctx.fill();
+  text(S.next,W/2,H/2+160+(AR?45:42),AR?32:28,WHITE,'700','center');
+  ctx.restore();
+  const f=ease(t,73.6,75.0);
+  if(f>0){ctx.fillStyle='rgba(0,0,0,'+f+')';ctx.fillRect(0,0,W,H);}
+}
+
+window.renderFrame=function(t){
+  ctx.save();
+  drawBG(t);
+  scene1(t);scene2(t);scene34(t);scene5(t);scene6(t);scene7(t);scene8(t);
+  drawCaption(t);
+  ctx.restore();
+  return true;
+};
+window.renderFrame(0);
+</script>
+</body>
+</html>
